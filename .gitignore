@@ -130,3 +130,9 @@ dmypy.json
 
 # secrets
 my_secrets.py
+
+# Mac
+.DS_Store
+
+# migration files
+**/migrations/
