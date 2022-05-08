@@ -3,7 +3,6 @@ import logging
 import boto3
 from botocore.exceptions import ClientError
 from dropbox.settings import AWS_ACCESS_KEY_ID, AWS_DEFAULT_ACL, AWS_SECRET_ACCESS_KEY, AWS_STORAGE_BUCKET_NAME
-from PIL import Image
 
 
 class CRUD:
@@ -16,84 +15,106 @@ class CRUD:
         )
         self.bucket_name = AWS_STORAGE_BUCKET_NAME
 
-    def upload(self, user_id, file):
-        filepath = file["filepath"]
-        file = filepath.split("/")[-1].split(".")
-        filename, filetype = file[0], file[1]
-        r_savepath = file.get("savepath")
-        r_filename = file.get("filename")
+    def upload(self, request, userId=""):
+        file = request.data.get("file")  # 파일 자체
+        if not file:
+            raise Exception("no file included")
 
-        # extra_args = {"ContentType": file.content_type}
+        file_path = request.data.get("file_path", "")  # 파일이 저장되어야 하는 주소
+        file_name = request.data.get("title", file.name)  # 파일 저장 이름 지정하지 않았다면 기본값이 저장됨
+        user_id = userId  #  request.user._auth_user_id
 
-        savepath = f"{user_id}/{r_savepath}/" if r_savepath else f"{user_id}/"
-        savepath = f"{savepath}/{r_filename}.{filetype}" if r_filename else f"{savepath}/{filename}.{filetype}"
+        file_path = f"{user_id}/{file_path}/{file_name}" if file_path else f"{user_id}/{file_name}"
+
         try:
-            result = self.s3_client.upload_file(
-                filepath, self.bucket_name, savepath, ExtraArgs={"ACL": AWS_DEFAULT_ACL}
+            result = self.s3_resource.Bucket(self.bucket_name).put_object(
+                Body=file,
+                Key=file_path,
+                ACL=AWS_DEFAULT_ACL,
+                ContentType=file.content_type,
             )
         except ClientError as e:
             logging.error(e)
             return False
         return result
 
-    def delete(self, user_id, file):
-        fileid = f"{user_id}/{file['fileid']}"
+    def delete(self, request, userId=""):
+        file_path = request.data.get("file_path", "")  # 삭제될 파일의 경로
+        user_id = userId  #  request.user._auth_user_id
+
+        file_path = f"{user_id}/{file_path}"
         try:
-            result = self.s3_client.delete_object(Bucket=self.bucket_name, Key=fileid)
+            result = self.s3_client.delete_object(Bucket=self.bucket_name, Key=file_path)
         except ClientError as e:
             logging.error(e)
             return False
         return result
 
-    def deletes(self, user_id, file):  # 여러 개를 한번에 delete
-        fileid_list = [{"Key": f"{user_id}/{fileid}"} for fileid in file["fileids"]]
+    # def read(self, request, userId=""):
+    #     try:
+    #         file_path = request.GET.get("file_path", "")  # 다운받아야 하는 파일의 경로
+
+    #         orig_file_name = file_path.split("\\")[-1]
+    #         save_as = request.GET.get("save_as", file_path)
+
+    #         bucket = self.s3_resource.Bucket(self.bucket_name)
+    #         user_id = userId
+
+    #         file = bucket.Object(file_path)
+    #         ext = save_as.split(".")[-1]
+
+    #         check_exist_path = ""
+    #         for path in ["media", user_id, save_as]:
+    #             if "." in path:
+    #                 continue
+    #             check_exist_path += f"{path}/"
+    #             if not os.path.exists(check_exist_path):
+    #                 os.mkdir(check_exist_path)
+
+    #         file.download_file(Filename=f"media\{user_id}\{save_as}\preview.{ext}")
+    #         if is_image(ext):
+    #             source = Image.open(f"media\{user_id}\{save_as}\preview.{ext}")
+    #             source.thumbnail((128, 128), Image.ANTIALIAS)  # 썸네일 생성
+    #             source.save(f"media\{user_id}\{save_as}\thumbnail.{ext}", "jpeg")
+    #         return True
+    #     except:
+    #         return False
+
+    def download(self, request, userId=""):
         try:
-            result = self.s3_client.delete_objects(Bucket=self.bucket_name, Delete={"Objects": fileid_list})
+            file_path = request.GET.get("file_path", "")  # 다운받아야 하는 파일의 경로
+            raw_file_path = file_path.split("\\")
+            root_path = "\\".join(raw_file_path[:-1])
+            orig_file_name = raw_file_path[-1]
+            new_file_name = request.GET.get("save_as", orig_file_name)  # 다운받을 이름 명시하지 않았다면 원래 파일 이름으로 저장
+            save_as = "\\".join([root_path, new_file_name])
+
+            bucket = self.s3_resource.Bucket(self.bucket_name)
+            user_id = userId
+
+            file = bucket.Object(file_path)
+            file.download_file(Filename=f"media\\{user_id}\\{save_as}")
         except ClientError as e:
             logging.error(e)
             return False
-        return result
 
-    def read(self, user_id, file):
-        fileid = f"{user_id}/{file['fileid']}"
-        filetype = file["filetype"]
-        bucket = self.s3_resource.Bucket(self.bucket_name)
-        object = bucket.Object(fileid)
+    def update(self, request, userId=""):
+        content = request.data.get("content", {})
+        user_id = userId
 
-        try:
-            response = object.get()
-        except ClientError as e:
-            logging.error(e)
-            return False
-
-        file_stream = response["Body"]
-        if filetype in ["jpg", "jpeg"]:
-            source = Image.open(file_stream)
-        else:  # 동영상이거나 파일일 경우
-            source = file_stream
-        return source
-
-    def download(self, user_id, file):
-        fileid = f"{user_id}/{file['fileid']}"
-        filetype = file["filetype"]
-
-        # file_path = os.path.join(IMAGE_DIR, 'macbookpro.png')
-        file_path = f"downloads/{fileid}.{filetype}"
-        try:
-            with open(file_path, "wb") as f:
-                self.s3_client.download_fileobj(self.bucket_name, fileid, f)
-        except ClientError as e:
-            logging.error(e)
-            return False
-
-    def update(self, user_id, file, content):
-        old_fileid = f"{user_id}/{file['fileid']}"
-        new_fileid = f"{user_id}/{file['new_fileid']}"
-
-        if content.get("request") == "rename":
+        if content == "rename":
+            old_path = f"{user_id}\\{content.get('old_path')}"
+            new_path = f"{user_id}\\{content.get('new_path')}"
             try:
-                self.s3_client.Object(self.bucket_name, new_fileid).copy_from(CopySource=old_fileid)
-                self.s3_client.Object(self.bucket_name, old_fileid).delete()
+                bucket = self.s3_resource.Bucket(self.bucket_name)
+                for object in bucket.objects.filter(Prefix=old_path):
+                    srcKey = object.key
+                    if not srcKey.endswith("/"):
+                        destFileKey = new_path + "/" + srcKey.split("/")[-1]
+                        copysource = self.bucket_name + "/" + srcKey
+
+                        self.s3_client.Object(self.bucket_name, destFileKey).copy_from(CopySource=copysource)
+                        self.s3_client.Object(self.bucket_name, copysource).delete()
             except ClientError as e:
                 logging.error(e)
                 return False
