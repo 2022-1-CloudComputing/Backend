@@ -8,7 +8,7 @@ from file.models import Bookmark, File, User
 from file.serializers import BookmarkSerializer
 from file.storages import CRUD
 
-
+ 
 class BookmarkViewSet(viewsets.ViewSet):
     lookup_field = "userId"
 
