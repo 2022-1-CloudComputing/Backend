@@ -42,7 +42,6 @@ INSTALLED_APPS = [
     "django.contrib.staticfiles",
     "rest_framework",
     "file",
-    "storages",
 ]
 
 MIDDLEWARE = [
@@ -126,6 +125,7 @@ MEDIA_ROOT = os.path.join(BASE_DIR, "media")
 
 DEFAULT_AUTO_FIELD = "django.db.models.BigAutoField"
 
+"""
 # https://django-storages.readthedocs.io/en/latest/backends/amazon-S3.html#usage
 AWS_ACCESS_KEY_ID = my_secrets.AWS.get("AWS_ACCESS_KEY_ID")
 AWS_SECRET_ACCESS_KEY = my_secrets.AWS.get("AWS_SECRET_ACCESS_KEY")
@@ -138,3 +138,4 @@ AWS_S3_SECURE_URLS = False
 
 AWS_S3_OBJECT_PARAMETERS = {"CacheControl": "max-age=86400"}
 AWS_DEFAULT_ACL = "public-read"
+"""
