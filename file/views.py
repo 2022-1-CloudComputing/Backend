@@ -4,11 +4,11 @@ from django.views import View
 from rest_framework import viewsets
 from rest_framework.response import Response
 
-from file.models import Bookmark, File, User
-from file.serializers import BookmarkSerializer
-from file.storages import CRUD
+#from file.models import Bookmark, File, User
+#from file.serializers import BookmarkSerializer
+#from file.storages import CRUD
 
- 
+"""
 class BookmarkViewSet(viewsets.ViewSet):
     lookup_field = "userId"
 
@@ -86,3 +86,4 @@ class FileUploadView(View):
                 return JsonResponse({"message": "fail update"})
         else:
             return JsonResponse({"message": "invalid requests"})
+"""

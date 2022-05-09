@@ -42,6 +42,7 @@ INSTALLED_APPS = [
     "django.contrib.staticfiles",
     "rest_framework",
     "file",
+    "user",
 ]
 
 MIDDLEWARE = [
@@ -97,6 +98,9 @@ AUTH_PASSWORD_VALIDATORS = [
         "NAME": "django.contrib.auth.password_validation.NumericPasswordValidator",
     },
 ]
+
+# AbstractUser를 상속받아 User 모델을 새로 만들어서 이 모델을 유저모델로 사용하겠음
+AUTH_USER_MODEL = 'user.User'
 
 
 # Internationalization

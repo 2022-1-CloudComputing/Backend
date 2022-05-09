@@ -1,3 +1,4 @@
+"""
 import logging
 
 import boto3
@@ -100,3 +101,4 @@ class CRUD:
             return True
         else:  # 그 외 요청 받기
             pass
+"""
