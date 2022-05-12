@@ -1,6 +1,8 @@
+
 from django.urls import include, path
 
 from file.views import BookmarkViewSet, FileUploadView
+
 
 urlpatterns = [
     path("users/<userId>/bookmarks", BookmarkViewSet.as_view({"get": "list"})),

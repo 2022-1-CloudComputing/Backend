@@ -23,7 +23,9 @@ BASE_DIR = Path(__file__).resolve().parent.parent
 # See https://docs.djangoproject.com/en/4.0/howto/deployment/checklist/
 
 # SECURITY WARNING: keep the secret key used in production secret!
-SECRET_KEY = my_secrets.get_djangoKey("djangoKey")
+
+SECRET_KEY = my_secrets.DJANGO_SECRET_KEY['django_key']
+
 
 # SECURITY WARNING: don't run with debug turned on in production!
 DEBUG = True
@@ -42,6 +44,8 @@ INSTALLED_APPS = [
     "django.contrib.staticfiles",
     "rest_framework",
     "file",
+    "user",
+
 ]
 
 MIDDLEWARE = [
@@ -105,6 +109,9 @@ AUTH_PASSWORD_VALIDATORS = [
     },
 ]
 
+# AbstractUser를 상속받아 User 모델을 새로 만들어서 이 모델을 유저모델로 사용하겠음
+AUTH_USER_MODEL = 'user.User'
+
 
 # Internationalization
 # https://docs.djangoproject.com/en/4.0/topics/i18n/
@@ -132,6 +139,7 @@ MEDIA_ROOT = os.path.join(BASE_DIR, "media")  # 사용자가 업로드한 파일
 
 DEFAULT_AUTO_FIELD = "django.db.models.BigAutoField"
 
+"""
 # https://django-storages.readthedocs.io/en/latest/backends/amazon-S3.html#usage
 AWS_ACCESS_KEY_ID = my_secrets.AWS.get("AWS_ACCESS_KEY_ID")
 AWS_SECRET_ACCESS_KEY = my_secrets.AWS.get("AWS_SECRET_ACCESS_KEY")
@@ -144,3 +152,4 @@ AWS_S3_SECURE_URLS = False
 
 AWS_S3_OBJECT_PARAMETERS = {"CacheControl": "max-age=86400"}
 AWS_DEFAULT_ACL = "public-read"
+"""

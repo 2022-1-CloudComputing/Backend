@@ -4,10 +4,12 @@ from rest_framework import viewsets
 from rest_framework.response import Response
 from rest_framework.views import APIView
 
-from file.models import Bookmark, File, User
-from file.serializers import BookmarkSerializer, FileSerializer
-from file.storages import CRUD
 
+from file.models import Bookmark, File
+from user.models import User
+from file.serializers import BookmarkSerializer, FileSerializer
+
+from file.storages import CRUD
 
 class BookmarkViewSet(viewsets.ViewSet):
     lookup_field = "userId"
