@@ -1,12 +1,14 @@
 from django.http import JsonResponse
 from django.shortcuts import get_object_or_404
-from django.views import View
 from rest_framework import viewsets
 from rest_framework.response import Response
+from rest_framework.views import APIView
+
 
 from file.models import Bookmark, File
 from user.models import User
-from file.serializers import BookmarkSerializer
+from file.serializers import BookmarkSerializer, FileSerializer
+
 from file.storages import CRUD
 
 class BookmarkViewSet(viewsets.ViewSet):
@@ -19,28 +21,27 @@ class BookmarkViewSet(viewsets.ViewSet):
         return Response(serializer.data)
 
 
-class FileUploadView(View):
+class FileUploadView(APIView):
     s3_client = CRUD()
 
-    def upload_file(self, request):
-        if request.method == "POST" and len(request.FILES) != 0:
-            file = request.FILES
-            user_id = request.headers["user_id"]
-
-            res = self.s3_client.upload(user_id, file)
-            if res:
-                return JsonResponse({"message": "success upload"})
+    def post(self, request, userId="", fileId=""):
+        serializer = FileSerializer(data=request.data)
+        if serializer.is_valid():
+            serializer.save()
+            if request.method == "POST" and len(request.FILES) != 0:
+                res = self.s3_client.upload(request, userId)
+                if res:
+                    return JsonResponse({"message": "success upload"})
+                else:
+                    return JsonResponse({"message": "fail upload"})
             else:
-                return JsonResponse({"message": "fail upload"})
+                return JsonResponse({"message": "invalid requests"})
         else:
-            return JsonResponse({"message": "invalid requests"})
+            return JsonResponse({"message": "invalid form"})
 
-    def delete_file(self, request):
+    def delete(self, request, userId="", fileId=""):
         if request.method == "DELETE":
-            file = request.FILES
-            user_id = request.headers["user_id"]
-
-            res = self.s3_client.delete(user_id, file)
+            res = self.s3_client.delete(request, userId)
             if res:
                 return JsonResponse({"message": "success delete"})
             else:
@@ -48,25 +49,19 @@ class FileUploadView(View):
         else:
             return JsonResponse({"message": "invalid requests"})
 
-    def read_file(self, request):
+    # def get(self, request, userId, fileId):
+    #     if request.method == "GET":
+    #         res = self.s3_client.read(request)
+    #         if res:
+    #             return JsonResponse({"message": "success read"}, status=200)
+    #         else:
+    #             return JsonResponse({"message": "fail read"}, status=400)
+    #     else:
+    #         return JsonResponse({"message": "invalid requests"})
+
+    def get(self, request, userId="", fileId=""):
         if request.method == "GET":
-            file = request.FILES
-            user_id = request.headers["user_id"]
-
-            res = self.s3_client.read(user_id, file)
-            if res:
-                return JsonResponse({"message": "success read"})
-            else:
-                return JsonResponse({"message": "fail read"})
-        else:
-            return JsonResponse({"message": "invalid requests"})
-
-    def download_file(self, request):
-        if request.method == "GET":
-            file = request.FILES
-            user_id = request.headers["user_id"]
-
-            res = self.s3_client.read(user_id, file)
+            res = self.s3_client.download(request, userId)
             if res:
                 return JsonResponse({"message": "success download"})
             else:
@@ -74,12 +69,9 @@ class FileUploadView(View):
         else:
             return JsonResponse({"message": "invalid requests"})
 
-    def update_file(self, request, content):
+    def put(self, request, userId="", fileId=""):
         if request.method == "PUT":
-            file = request.FILES
-            user_id = request.headers["user_id"]
-
-            res = self.s3_client.update(user_id, file, content)
+            res = self.s3_client.update(request, userId)
             if res:
                 return JsonResponse({"message": "success update"})
             else:
