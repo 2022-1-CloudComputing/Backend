@@ -1,6 +1,5 @@
 import jwt
 import boto3
-from django.conf import settings
 from file.models import Folder
 from dropbox.settings import AWS_ACCESS_KEY_ID, AWS_SECRET_ACCESS_KEY, AWS_REGION, COGNITO_AWS_USER_POOL,COGNITO_APP_CLIENT_ID,COGNITO_IDENTITY_POOL_ID,AWS_ACCOUNT_ID
 
