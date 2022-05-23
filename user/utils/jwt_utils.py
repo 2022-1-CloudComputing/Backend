@@ -1,7 +1,8 @@
-from jwt.algorithms import RSAAlgorithm
-from rest_framework_jwt.settings import api_settings
 import jwt
 from django.contrib.auth import authenticate
+from jwt.algorithms import RSAAlgorithm
+from rest_framework_jwt.settings import api_settings
+
 
 # Cognito token decoder
 def cognito_jwt_decoder(token):

@@ -10,12 +10,12 @@ For the full list of settings and their values, see
 https://docs.djangoproject.com/en/4.0/ref/settings/
 """
 
+import json
 import os
 from pathlib import Path
 
 import my_secrets
 import requests
-import json
 
 # Build paths inside the project like this: BASE_DIR / 'subdir'.
 BASE_DIR = Path(__file__).resolve().parent.parent
@@ -57,17 +57,13 @@ MIDDLEWARE = [
     "django.contrib.auth.middleware.AuthenticationMiddleware",
     "django.contrib.messages.middleware.MessageMiddleware",
     "django.middleware.clickjacking.XFrameOptionsMiddleware",
-    "django.contrib.auth.middleware.RemoteUserMiddleware", # RemoteUserMiddleware, congnito
+    "django.contrib.auth.middleware.RemoteUserMiddleware",  # RemoteUserMiddleware, congnito
 ]
 
-REST_FRAMEWORK = {
-    'DEFAULT_PERMISSION_CLASSES': (
-        'user.api.permissions.DenyAny',
-    ),
-    'DEFAULT_AUTHENTICATION_CLASSES' : (
-        'rest_framework_jwt.authentication.JSONWebTokenAuthentication'    #cognito
-    )
-}
+# REST_FRAMEWORK = {
+#     "DEFAULT_PERMISSION_CLASSES": ("user.api.permissions.DenyAny",),
+#     "DEFAULT_AUTHENTICATION_CLASSES": ("rest_framework_jwt.authentication.JSONWebTokenAuthentication"),  # cognito
+# }
 
 ROOT_URLCONF = "dropbox.urls"
 
@@ -155,13 +151,6 @@ DEFAULT_AUTO_FIELD = "django.db.models.BigAutoField"
 AWS_ACCESS_KEY_ID = my_secrets.AWS.get("AWS_ACCESS_KEY_ID")
 AWS_SECRET_ACCESS_KEY = my_secrets.AWS.get("AWS_SECRET_ACCESS_KEY")
 AWS_ACCOUNT_ID = my_secrets.AWS.get("AWS_ACCOUNT_ID")
-
 AWS_REGION = my_secrets.AWS.get("AWS_REGION")
 AWS_STORAGE_BUCKET_NAME = my_secrets.AWS.get("AWS_STORAGE_BUCKET_NAME")
-AWS_S3_CUSTOM_DOMAIN = "%s.s3.%s.amazonaws.com" % (AWS_STORAGE_BUCKET_NAME, AWS_REGION)
-AWS_AUTO_CREATE_BUCKET = True
-AWS_S3_SECURE_URLS = False
-
-AWS_S3_OBJECT_PARAMETERS = {"CacheControl": "max-age=86400"}
-AWS_DEFAULT_ACL = "public-read"
-"""
+AWS_DEFAULT_ACL = my_secrets.AWS.get("AWS_DEFAULT_ACL", "public-read")

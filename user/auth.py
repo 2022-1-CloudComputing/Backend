@@ -1,187 +1,207 @@
-import jwt
-import boto3
-from file.models import Folder
-from dropbox.settings import AWS_ACCESS_KEY_ID, AWS_SECRET_ACCESS_KEY, AWS_REGION, COGNITO_AWS_USER_POOL,COGNITO_APP_CLIENT_ID,COGNITO_IDENTITY_POOL_ID,AWS_ACCOUNT_ID
+# import boto3
+# import jwt
+# from dropbox.settings import (
+#     AWS_ACCESS_KEY_ID,
+#     AWS_ACCOUNT_ID,
+#     AWS_REGION,
+#     AWS_SECRET_ACCESS_KEY,
+#     COGNITO_APP_CLIENT_ID,
+#     COGNITO_AWS_USER_POOL,
+#     COGNITO_IDENTITY_POOL_ID,
+# )
+# from file.models import Folder
 
-class Cognito():
-    region = AWS_REGION
-    user_pool_id = COGNITO_AWS_USER_POOL
-    app_client_id = COGNITO_APP_CLIENT_ID
-    identity_pool_id = COGNITO_IDENTITY_POOL_ID
-    account_id = AWS_ACCOUNT_ID
-    aws_access_key_id = AWS_ACCESS_KEY_ID
-    aws_secret_access_key = AWS_SECRET_ACCESS_KEY
 
-    def sign_up(self, username, password, UserAttributes):
-        client = boto3.client('cognito-idp', self.region,
-                            aws_access_key_id=self.aws_access_key_id,
-                            aws_secret_access_key=self.aws_secret_access_key)
+# class Cognito:
+#     region = AWS_REGION
+#     user_pool_id = COGNITO_AWS_USER_POOL
+#     app_client_id = COGNITO_APP_CLIENT_ID
+#     identity_pool_id = COGNITO_IDENTITY_POOL_ID
+#     account_id = AWS_ACCOUNT_ID
+#     aws_access_key_id = AWS_ACCESS_KEY_ID
+#     aws_secret_access_key = AWS_SECRET_ACCESS_KEY
 
-        response = client.sign_up(ClientId=self.app_client_id,
-                                  Username=username,
-                                  Password=password,
-                                  UserAttributes=UserAttributes)
+#     def sign_up(self, username, password, UserAttributes):
+#         client = boto3.client(
+#             "cognito-idp",
+#             self.region,
+#             aws_access_key_id=self.aws_access_key_id,
+#             aws_secret_access_key=self.aws_secret_access_key,
+#         )
 
-        client.admin_update_user_attributes(
-            UserPoolId=self.user_pool_id,
-            Username=username,
-            UserAttributes=[
-                {
-                    'Name': 'email_verified',
-                    'Value': 'true'
-                }
-            ]
-        )
+#         response = client.sign_up(
+#             ClientId=self.app_client_id, Username=username, Password=password, UserAttributes=UserAttributes
+#         )
 
-        return response
+#         client.admin_update_user_attributes(
+#             UserPoolId=self.user_pool_id,
+#             Username=username,
+#             UserAttributes=[{"Name": "email_verified", "Value": "true"}],
+#         )
 
-    def confirm_sign_up(self, username):
-        client = boto3.client('cognito-idp', self.region,
-                            aws_access_key_id=self.aws_access_key_id,
-                            aws_secret_access_key=self.aws_secret_access_key)
+#         return response
 
-        response = client.admin_confirm_sign_up(UserPoolId=self.user_pool_id, Username=username)
-        return response
+#     def confirm_sign_up(self, username):
+#         client = boto3.client(
+#             "cognito-idp",
+#             self.region,
+#             aws_access_key_id=self.aws_access_key_id,
+#             aws_secret_access_key=self.aws_secret_access_key,
+#         )
 
-    def sign_in_admin(self, username, password):
-        # Get ID Token
-        idp_client = boto3.client('cognito-idp', self.region,
-                            aws_access_key_id=self.aws_access_key_id,
-                            aws_secret_access_key=self.aws_secret_access_key)
+#         response = client.admin_confirm_sign_up(UserPoolId=self.user_pool_id, Username=username)
+#         return response
 
-        response = idp_client.admin_initiate_auth(UserPoolId=self.user_pool_id,
-                                              ClientId=self.app_client_id,
-                                              AuthFlow='ADMIN_NO_SRP_AUTH',
-                                              AuthParameters={'USERNAME': username,'PASSWORD': password})
+#     def sign_in_admin(self, username, password):
+#         # Get ID Token
+#         idp_client = boto3.client(
+#             "cognito-idp",
+#             self.region,
+#             aws_access_key_id=self.aws_access_key_id,
+#             aws_secret_access_key=self.aws_secret_access_key,
+#         )
 
-        provider = 'cognito-idp.%s.amazonaws.com/%s' % (self.region, self.user_pool_id)
-        id_token = response['AuthenticationResult']['IdToken']
-        access_token = response['AuthenticationResult']['AccessToken']
-        refresh_token = response['AuthenticationResult']['RefreshToken']
+#         response = idp_client.admin_initiate_auth(
+#             UserPoolId=self.user_pool_id,
+#             ClientId=self.app_client_id,
+#             AuthFlow="ADMIN_NO_SRP_AUTH",
+#             AuthParameters={"USERNAME": username, "PASSWORD": password},
+#         )
 
-        # Get IdentityId
-        ci_client = boto3.client('cognito-identity', self.region,
-                            aws_access_key_id=self.aws_access_key_id,
-                            aws_secret_access_key=self.aws_secret_access_key)
+#         provider = "cognito-idp.%s.amazonaws.com/%s" % (self.region, self.user_pool_id)
+#         id_token = response["AuthenticationResult"]["IdToken"]
+#         access_token = response["AuthenticationResult"]["AccessToken"]
+#         refresh_token = response["AuthenticationResult"]["RefreshToken"]
 
-        response = ci_client.get_id(AccountId=self.account_id,
-                                IdentityPoolId=self.identity_pool_id,
-                                Logins={provider: id_token})
+#         # Get IdentityId
+#         ci_client = boto3.client(
+#             "cognito-identity",
+#             self.region,
+#             aws_access_key_id=self.aws_access_key_id,
+#             aws_secret_access_key=self.aws_secret_access_key,
+#         )
 
-        # Get Credentials
-        response = ci_client.get_credentials_for_identity(IdentityId=response['IdentityId'], Logins={provider: id_token})
+#         response = ci_client.get_id(
+#             AccountId=self.account_id, IdentityPoolId=self.identity_pool_id, Logins={provider: id_token}
+#         )
 
-        # Get User info
-        user_claims = jwt.decode(id_token, verify=False)
+#         # Get Credentials
+#         response = ci_client.get_credentials_for_identity(
+#             IdentityId=response["IdentityId"], Logins={provider: id_token}
+#         )
 
-        # Create root folder object
-        if not Folder.objects.filter(path=response['IdentityId']+'/root/').exists():
-            Folder.objects.create(path=response['IdentityId']+'/root/', parent_folder_id=None, folder_name='root')
-        root_folder_id = Folder.objects.get(path=response['IdentityId']+'/root/').folder_id
-        # User Token
-        result = {
-            'User': {
-                'id': user_claims['cognito:username'],
-                'sub': user_claims['sub'],
-                'name': user_claims['name'],
-                'email': user_claims['email'],
-                'root_folder_id': root_folder_id
-            },
-            'IdentityId': response['IdentityId'],
-            'IdToken': id_token,
-            'AccessToken': access_token,
-            'RefreshToken': refresh_token,
-            'Credentials': {
-                'AccessKeyId': response['Credentials']['AccessKeyId'],
-                'SessionToken': response['Credentials']['SessionToken'],
-                'SecretKey': response['Credentials']['SecretKey']
-            }
-        }
+#         # Get User info
+#         user_claims = jwt.decode(id_token, verify=False)
 
-        return result
+#         # Create root folder object
+#         if not Folder.objects.filter(path=response["IdentityId"] + "/root/").exists():
+#             Folder.objects.create(path=response["IdentityId"] + "/root/", parent_folder_id=None, folder_name="root")
+#         root_folder_id = Folder.objects.get(path=response["IdentityId"] + "/root/").folder_id
+#         # User Token
+#         result = {
+#             "User": {
+#                 "id": user_claims["cognito:username"],
+#                 "sub": user_claims["sub"],
+#                 "name": user_claims["name"],
+#                 "email": user_claims["email"],
+#                 "root_folder_id": root_folder_id,
+#             },
+#             "IdentityId": response["IdentityId"],
+#             "IdToken": id_token,
+#             "AccessToken": access_token,
+#             "RefreshToken": refresh_token,
+#             "Credentials": {
+#                 "AccessKeyId": response["Credentials"]["AccessKeyId"],
+#                 "SessionToken": response["Credentials"]["SessionToken"],
+#                 "SecretKey": response["Credentials"]["SecretKey"],
+#             },
+#         }
 
-    def sign_out(self, access_token):
-        # Get Client
-        client = boto3.client('cognito-idp', self.region,
-                            aws_access_key_id=self.aws_access_key_id,
-                            aws_secret_access_key=self.aws_secret_access_key)
+#         return result
 
-        try:
-            client.global_sign_out(
-                AccessToken=access_token
-            )
-        except client.exceptions.NotAuthorizedException:
-            return {'message': '로그인 상태에 문제가 있습니다. 다시 시도해주세요. (NotAuthorizedException)'}
-        except Exception as exc:
-            return {'message': '로그아웃 처리에 실패했습니다. ' + str(exc)}
+#     def sign_out(self, access_token):
+#         # Get Client
+#         client = boto3.client(
+#             "cognito-idp",
+#             self.region,
+#             aws_access_key_id=self.aws_access_key_id,
+#             aws_secret_access_key=self.aws_secret_access_key,
+#         )
 
-        return None
+#         try:
+#             client.global_sign_out(AccessToken=access_token)
+#         except client.exceptions.NotAuthorizedException:
+#             return {"message": "로그인 상태에 문제가 있습니다. 다시 시도해주세요. (NotAuthorizedException)"}
+#         except Exception as exc:
+#             return {"message": "로그아웃 처리에 실패했습니다. " + str(exc)}
 
-    def delete_user(self, access_token):
-        # Get Client
-        client = boto3.client('cognito-idp', self.region,
-                            aws_access_key_id=self.aws_access_key_id,
-                            aws_secret_access_key=self.aws_secret_access_key)
+#         return None
 
-        try:
-            client.delete_user(
-                AccessToken=access_token
-            )
-        except client.exceptions.NotAuthorizedException:
-            return {'message': '로그인 상태에 문제가 있습니다. 다시 시도해주세요. (NotAuthorizedException)'}
-        except Exception as exc:
-            return {'message': '탈퇴 처리에 실패했습니다. ' + str(exc)}
+#     def delete_user(self, access_token):
+#         # Get Client
+#         client = boto3.client(
+#             "cognito-idp",
+#             self.region,
+#             aws_access_key_id=self.aws_access_key_id,
+#             aws_secret_access_key=self.aws_secret_access_key,
+#         )
 
-        return None
+#         try:
+#             client.delete_user(AccessToken=access_token)
+#         except client.exceptions.NotAuthorizedException:
+#             return {"message": "로그인 상태에 문제가 있습니다. 다시 시도해주세요. (NotAuthorizedException)"}
+#         except Exception as exc:
+#             return {"message": "탈퇴 처리에 실패했습니다. " + str(exc)}
 
-    def change_password(self, access_token, prevpw, newpw):
-        # Get Client
-        client = boto3.client('cognito-idp', self.region,
-                            aws_access_key_id=self.aws_access_key_id,
-                            aws_secret_access_key=self.aws_secret_access_key)
+#         return None
 
-        try:
-            client.change_password(
-                PreviousPassword=prevpw,
-                ProposedPassword=newpw,
-                AccessToken=access_token
-            )
-        except client.exceptions.NotAuthorizedException:
-            return {'message': '로그인 상태에 문제가 있습니다. 다시 시도해주세요. (NotAuthorizedException)'}
-        except Exception as exc:
-            return {'message': '비밀번호 변경에 실패했습니다. ' + str(exc)}
+#     def change_password(self, access_token, prevpw, newpw):
+#         # Get Client
+#         client = boto3.client(
+#             "cognito-idp",
+#             self.region,
+#             aws_access_key_id=self.aws_access_key_id,
+#             aws_secret_access_key=self.aws_secret_access_key,
+#         )
 
-        return None
+#         try:
+#             client.change_password(PreviousPassword=prevpw, ProposedPassword=newpw, AccessToken=access_token)
+#         except client.exceptions.NotAuthorizedException:
+#             return {"message": "로그인 상태에 문제가 있습니다. 다시 시도해주세요. (NotAuthorizedException)"}
+#         except Exception as exc:
+#             return {"message": "비밀번호 변경에 실패했습니다. " + str(exc)}
 
-    def forgot_password(self, username):
-        # Get Client
-        client = boto3.client('cognito-idp', self.region,
-                            aws_access_key_id=self.aws_access_key_id,
-                            aws_secret_access_key=self.aws_secret_access_key)
+#         return None
 
-        resp = client.forgot_password(
-            ClientId=self.app_client_id,
-            Username=username
-        )
+#     def forgot_password(self, username):
+#         # Get Client
+#         client = boto3.client(
+#             "cognito-idp",
+#             self.region,
+#             aws_access_key_id=self.aws_access_key_id,
+#             aws_secret_access_key=self.aws_secret_access_key,
+#         )
 
-        return resp
+#         resp = client.forgot_password(ClientId=self.app_client_id, Username=username)
 
-    def confirm_forgot_password(self, username, password, code):
-        # Get Client
-        client = boto3.client('cognito-idp', self.region,
-                            aws_access_key_id=self.aws_access_key_id,
-                            aws_secret_access_key=self.aws_secret_access_key)
-        
-        try:
-            client.confirm_forgot_password(
-                ClientId=self.app_client_id,
-                Username=username,
-                ConfirmationCode=code,
-                Password=password
-            )
-        except client.exceptions.LimitExceededException:
-            return {'message': '변경 요청 횟수를 초과했습니다. 1분 뒤 다시 요청해주세요.'}
-        except Exception as exc:
-            return {'message': '비밀번호 변경 처리에 실패했습니다. ' + str(exc)}
+#         return resp
 
-        return None
+#     def confirm_forgot_password(self, username, password, code):
+#         # Get Client
+#         client = boto3.client(
+#             "cognito-idp",
+#             self.region,
+#             aws_access_key_id=self.aws_access_key_id,
+#             aws_secret_access_key=self.aws_secret_access_key,
+#         )
+
+#         try:
+#             client.confirm_forgot_password(
+#                 ClientId=self.app_client_id, Username=username, ConfirmationCode=code, Password=password
+#             )
+#         except client.exceptions.LimitExceededException:
+#             return {"message": "변경 요청 횟수를 초과했습니다. 1분 뒤 다시 요청해주세요."}
+#         except Exception as exc:
+#             return {"message": "비밀번호 변경 처리에 실패했습니다. " + str(exc)}
+
+#         return None

@@ -14,11 +14,11 @@ Including another URLconf
     2. Add a URL to urlpatterns:  path('blog/', include('blog.urls'))
 """
 from django.contrib import admin
-from django.urls import path, include
-from user.views import UserProfileApiView  #일단 테스트용으로 프로젝트 url.py에다가 만듦
+from django.urls import include, path
+from user.views import UserProfileApiView  # 일단 테스트용으로 프로젝트 url.py에다가 만듦
 
 urlpatterns = [
     path("", include("file.urls")),
     path("admin/", admin.site.urls),
-    path('api/v1/me', UserProfileApiView.as_view(), name='login')
+    # path('api/v1/me', UserProfileApiView.as_view(), name='login')
 ]
