@@ -15,8 +15,10 @@ Including another URLconf
 """
 from django.contrib import admin
 from django.urls import path, include
+from user.views import UserProfileApiView  #일단 테스트용으로 프로젝트 url.py에다가 만듦
 
 urlpatterns = [
     path("", include("file.urls")),
     path("admin/", admin.site.urls),
+    path('api/v1/me', UserProfileApiView.as_view(), name='login')
 ]
