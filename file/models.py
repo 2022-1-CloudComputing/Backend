@@ -4,9 +4,9 @@ from user.models import User
 
 class File(models.Model):
     title = models.CharField(max_length=200, null=True)  # 파일 이름
-    file = models.FileField(blank=False, upload_to="media")  # 파일 자체
-    file_path = models.CharField(max_length=200, null=False)  # 파일 저장 경로
-    owner = models.ForeignKey(User, on_delete=models.CASCADE, null=False)
+    file = models.FileField(upload_to="media", null=True)  # 파일 자체는 s3에 저장
+    file_path = models.CharField(max_length=200, null=True)  # 파일 저장 경로
+    owner = models.ForeignKey(User, on_delete=models.CASCADE)
     created_at = models.DateTimeField(auto_now_add=True)  # 생성 일자
 
     def __str__(self):

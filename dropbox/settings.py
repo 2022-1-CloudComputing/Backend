@@ -26,7 +26,7 @@ BASE_DIR = Path(__file__).resolve().parent.parent
 
 # SECURITY WARNING: keep the secret key used in production secret!
 
-SECRET_KEY = my_secrets.DJANGO_SECRET_KEY['django_key']
+SECRET_KEY = my_secrets.DJANGO_SECRET_KEY["django_key"]
 
 
 # SECURITY WARNING: don't run with debug turned on in production!
@@ -47,7 +47,6 @@ INSTALLED_APPS = [
     "rest_framework",
     "file",
     "user",
-
 ]
 
 MIDDLEWARE = [
@@ -122,7 +121,7 @@ AUTH_PASSWORD_VALIDATORS = [
 ]
 
 # AbstractUser를 상속받아 User 모델을 새로 만들어서 이 모델을 유저모델로 사용하겠음
-AUTH_USER_MODEL = 'user.User'
+AUTH_USER_MODEL = "user.User"
 
 
 # Internationalization
