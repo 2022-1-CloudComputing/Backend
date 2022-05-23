@@ -155,6 +155,7 @@ DEFAULT_AUTO_FIELD = "django.db.models.BigAutoField"
 # https://django-storages.readthedocs.io/en/latest/backends/amazon-S3.html#usage
 AWS_ACCESS_KEY_ID = my_secrets.AWS.get("AWS_ACCESS_KEY_ID")
 AWS_SECRET_ACCESS_KEY = my_secrets.AWS.get("AWS_SECRET_ACCESS_KEY")
+AWS_ACCOUNT_ID = my_secrets.AWS.get("AWS_ACCOUNT_ID")
 
 AWS_REGION = my_secrets.AWS.get("AWS_REGION")
 AWS_STORAGE_BUCKET_NAME = my_secrets.AWS.get("AWS_STORAGE_BUCKET_NAME")
@@ -171,8 +172,10 @@ AWS_DEFAULT_ACL = "public-read"
 #cognito
 COGNITO_AWS_REGION = my_secrets.COGNITO.get("COGNITO_AWS_REGION")
 COGNITO_AWS_USER_POOL = my_secrets.COGNITO.get("COGNITO_AWS_USER_POOL")
-COGNITO_AUDIENCE = my_secrets.COGNITO.get("COGNITO_AUDIENCE")
+COGNITO_AUDIENCE = my_secrets.COGNITO.get("COGNITO_AUDIENCE") #None
 COGNITO_POOL_URL = my_secrets.COGNITO.get("COGNITO_POOL_URL")
+COGNITO_IDENTITY_POOL_ID = my_secrets.COGNITO.get("COGNITO_IDENTITY_POOL_ID")
+COGNITO_APP_CLIENT_ID = my_secrets.COGNITO.get("COGNITO_APP_CLIENT_ID")
 
 COGNITO_POOL_URL = f'https://cognito-idp.{COGNITO_AWS_REGION}.amazonaws.com/{COGNITO_AWS_USER_POOL}/.well-known/jwks/json'
 jwks = requests.get(COGNITO_POOL_URL).json()
