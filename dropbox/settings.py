@@ -61,14 +61,14 @@ MIDDLEWARE = [
     "django.contrib.auth.middleware.RemoteUserMiddleware", # RemoteUserMiddleware, congnito
 ]
 
-REST_FRAMEWORK = {
-    'DEFAULT_PERMISSION_CLASSES': (
-        'user.api.permissions.DenyAny',
-    ),
-    'DEFAULT_AUTHENTICATION_CLASSES' : (
-        'rest_framework_jwt.authentication.JSONWebTokenAuthentication'    #cognito
-    )
-}
+# REST_FRAMEWORK = {
+#     'DEFAULT_PERMISSION_CLASSES': (
+#         'user.api.permissions.DenyAny',
+#     ),
+#     'DEFAULT_AUTHENTICATION_CLASSES' : (
+#         'rest_framework_jwt.authentication.JSONWebTokenAuthentication'    #cognito
+#     )
+# }
 
 ROOT_URLCONF = "dropbox.urls"
 
@@ -173,22 +173,22 @@ AWS_DEFAULT_ACL = "public-read"
 COGNITO_AWS_REGION = my_secrets.COGNITO.get("COGNITO_AWS_REGION")
 COGNITO_AWS_USER_POOL = my_secrets.COGNITO.get("COGNITO_AWS_USER_POOL")
 COGNITO_AUDIENCE = my_secrets.COGNITO.get("COGNITO_AUDIENCE") #None
-COGNITO_POOL_URL = my_secrets.COGNITO.get("COGNITO_POOL_URL")
+# COGNITO_POOL_URL = my_secrets.COGNITO.get("COGNITO_POOL_URL")
 COGNITO_IDENTITY_POOL_ID = my_secrets.COGNITO.get("COGNITO_IDENTITY_POOL_ID")
 COGNITO_APP_CLIENT_ID = my_secrets.COGNITO.get("COGNITO_APP_CLIENT_ID")
 
-COGNITO_POOL_URL = f'https://cognito-idp.{COGNITO_AWS_REGION}.amazonaws.com/{COGNITO_AWS_USER_POOL}/.well-known/jwks/json'
-jwks = requests.get(COGNITO_POOL_URL).json()
-rsa_keys = {key['kid']: json.dumps(key) for key in jwks['keys']}
+# COGNITO_POOL_URL = f'https://cognito-idp.{COGNITO_AWS_REGION}.amazonaws.com/{COGNITO_AWS_USER_POOL}/.well-known/jwks/json'
+# jwks = requests.get(COGNITO_POOL_URL).json()
+# rsa_keys = {key['kid']: json.dumps(key) for key in jwks['keys']}
 
-JWT_AUTH = {
-    # Login Handler
-    'JWT_PAYLOAD_GET_USERNAME_HANDLER': 'cognito_auth.utils.jwt_utils.user_info_handler',
-    # Decode Handler
-    'JWT_DECODE_HANDLER': 'cognito_auth.utils.jwt_utils.cognito_jwt_decoder',
-    'JWT_PUBLIC_KEY': rsa_keys,
-    'JWT_ALGORITHM': 'RS256',
-    'JWT_AUDIENCE': COGNITO_AUDIENCE,
-    'JWT_ISSUER': COGNITO_POOL_URL,
-    'JWT_AUTH_HEADER_PREFIX': 'Bearer',
-}
+# JWT_AUTH = {
+#     # Login Handler
+#     'JWT_PAYLOAD_GET_USERNAME_HANDLER': 'cognito_auth.utils.jwt_utils.user_info_handler',
+#     # Decode Handler
+#     'JWT_DECODE_HANDLER': 'cognito_auth.utils.jwt_utils.cognito_jwt_decoder',
+#     'JWT_PUBLIC_KEY': rsa_keys,
+#     'JWT_ALGORITHM': 'RS256',
+#     'JWT_AUDIENCE': COGNITO_AUDIENCE,
+#     'JWT_ISSUER': COGNITO_POOL_URL,
+#     'JWT_AUTH_HEADER_PREFIX': 'Bearer',
+# }
