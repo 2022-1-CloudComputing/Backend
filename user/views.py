@@ -59,13 +59,16 @@ class Signup(APIView):
     def post(self, request):        
         # 파라미터가 전부 입력되었는지 확인
         required_keys = ['id', 'pw', 'email', 'name']
+        print(request.POST)
         if all(it in request.POST for it in required_keys):
             if User.objects.filter(username=request.POST['id']).count():
                 return Response({'message': '이미 존재하는 아이디입니다.'}, status=400)
             if User.objects.filter(email=request.POST['email']).count():
                 return Response({'message': '이미 존재하는 이메일입니다.'}, status=400)
 
-            hashcode = hashlib.md5(request.POST['pw'].encode('utf-8')).hexdigest()
+
+            """password hash로 하니까 대문자 소문자 적으라해서 에러남.."""
+            #hashcode = hashlib.md5(request.POST['pw'].encode('utf-8')).hexdigest()
             # user = User.objects.create_user(
             #     username=request.POST['id'],
             #     email=request.POST['email'],
@@ -76,7 +79,7 @@ class Signup(APIView):
             cog = Cognito()
             cog.sign_up(
                 username=request.POST['id'],
-                password=hashcode,
+                password=request.POST['pw'],
                 UserAttributes=[
                     {
                         'Name': 'email',

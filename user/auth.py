@@ -1,11 +1,11 @@
 import jwt
 import boto3
 from file.models import Folder
-from dropbox.settings import AWS_ACCESS_KEY_ID, AWS_SECRET_ACCESS_KEY, AWS_REGION, COGNITO_AWS_USER_POOL,COGNITO_APP_CLIENT_ID,COGNITO_IDENTITY_POOL_ID,AWS_ACCOUNT_ID
+from dropbox.settings import AWS_ACCESS_KEY_ID, AWS_SECRET_ACCESS_KEY, COGNITO_USER_POOL_ID,COGNITO_APP_CLIENT_ID,COGNITO_IDENTITY_POOL_ID,AWS_ACCOUNT_ID,COGNITO_REGION
 
 class Cognito():
-    region = AWS_REGION
-    user_pool_id = COGNITO_AWS_USER_POOL
+    region = COGNITO_REGION
+    user_pool_id = COGNITO_USER_POOL_ID
     app_client_id = COGNITO_APP_CLIENT_ID
     identity_pool_id = COGNITO_IDENTITY_POOL_ID
     account_id = AWS_ACCOUNT_ID
