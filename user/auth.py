@@ -55,6 +55,8 @@ class Cognito():
                                               AuthParameters={'USERNAME': username,'PASSWORD': password})
 
         provider = 'cognito-idp.%s.amazonaws.com/%s' % (self.region, self.user_pool_id)
+
+
         id_token = response['AuthenticationResult']['IdToken']
         access_token = response['AuthenticationResult']['AccessToken']
         refresh_token = response['AuthenticationResult']['RefreshToken']
@@ -74,6 +76,8 @@ class Cognito():
         # Get User info
         user_claims = jwt.decode(id_token, verify=False)
 
+        #print("test")
+        
         # Create root folder object
         if not Folder.objects.filter(path=response['IdentityId']+'/root/').exists():
             Folder.objects.create(path=response['IdentityId']+'/root/', parent_folder_id=None, folder_name='root')

@@ -40,14 +40,15 @@ class Login(APIView):
 
             username = request.POST['id']
             password = request.POST['pw']
-            hashcode = hashlib.md5(password.encode('utf-8')).hexdigest()
+            print(username, password)
+            #hashcode = hashlib.md5(password.encode('utf-8')).hexdigest()
             # user = authenticate(username=username, password=hashcode)
 
             # if user is not None:
             #     login(request, user)
-            hashcode = hashlib.md5(request.POST['pw'].encode('utf-8')).hexdigest()
+            #hashcode = hashlib.md5(request.POST['pw'].encode('utf-8')).hexdigest()
             cog = Cognito()
-            result = cog.sign_in_admin(username=username, password=hashcode)
+            result = cog.sign_in_admin(username=username, password=password)
             return Response(result, status=200)
             # else:
                 # return Response({'message': '아이디 혹은 비밀번호가 잘못되었습니다.'}, status=401)
