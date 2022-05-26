@@ -14,3 +14,9 @@ class BookmarkSerializer(serializers.ModelSerializer):
         model = Bookmark
         fields = "__all__"
         related_object = 'file'
+
+class BookmarkSimpleSerialiser(serializers.ModelSerializer):
+    fileId = serializers.ReadOnlyField(source='file.id')
+    class Meta:
+        model = Bookmark
+        fields = ['fileId']

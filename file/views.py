@@ -1,3 +1,4 @@
+from math import fabs
 from django.http import JsonResponse
 from django.shortcuts import get_object_or_404
 from rest_framework import viewsets
@@ -6,41 +7,66 @@ from rest_framework.views import APIView
 
 from file.models import Bookmark, File
 from user.models import User
-from file.serializers import BookmarkSerializer, FileSerializer
+from file.serializers import BookmarkSerializer, BookmarkSimpleSerialiser, FileSerializer
 
 from file.storages import CRUD
 
 import json
 
-class BookmarkDetailView(APIView): # 하나의 북마크 조회
+class BookmarkDetailView(APIView): # 하나의 북마크 삭제
     def delete(self, request, userId="", bookmarkId=""):
-        bookmark = Bookmark.objects.get(id = bookmarkId)
+        try:
+            bookmark = Bookmark.objects.get(id = bookmarkId)
+        except Bookmark.DoesNotExist:
+            return JsonResponse({"message": "Requested Bookmark does not exist."})
+        
         bookmarkUserId = bookmark.user.id;
-        print(userId, bookmarkUserId, int(userId)==int(bookmarkUserId))
         if (int(bookmarkUserId)==int(userId)):
             bookmark.delete();
-            return JsonResponse({"message": "bookmark successfully deleted."})
+            return JsonResponse({"message": "Bookmark successfully deleted."})
         else:
             return JsonResponse({"message": "Request user is not owner of requested bookmark."})
 
 class BookmarkView(APIView): # 사용자의 북마크 리스트 조회 또는 북마크 추가
-    def get(self, request, userId=""): # 완료
-        user = User.objects.get(id = userId)
+    def get(self, request, userId=""):
+        try:
+            user = User.objects.get(id=userId)
+        except User.DoesNotExist:
+            return JsonResponse("Requested user does not exist.")
         bookmarks = Bookmark.objects.filter(user = user)
         serializer = BookmarkSerializer(bookmarks, many=True)
         return JsonResponse(serializer.data, safe=False);
 
-    def post(self, request, userId=""): # 완료
+    def post(self, request, userId=""):
         received_json_data = json.loads(request.body.decode("utf-8"))
         fileId = received_json_data['fileId']
-        user = User.objects.get(id=userId)
-        file = File.objects.get(id=fileId)
-        bookmark = Bookmark(user=user, file=file)
-        bookmark.save();
-        serializer = BookmarkSerializer(bookmark)
-        return JsonResponse(serializer.data)
+        try:
+            user = User.objects.get(id=userId)
+        except User.DoesNotExist:
+            return JsonResponse({"message":"Requested user does not exist."})
+        try:
+            file = File.objects.get(id = fileId);
+        except File.DoesNotExist:
+            return JsonResponse({"message":"Reqeusted File does not exist."})
 
+        if (Bookmark.objects.filter(user=user, file=file).exists()):
+            return JsonResponse({"message": "Bookmark already exists."})
+        else:
+            bookmark = Bookmark(user=user, file=file)
+            bookmark.save();
+            serializer = BookmarkSerializer(bookmark)
+            return JsonResponse(serializer.data)
 
+class BookmarkSimpleView(APIView): # 파일의 북마크 여부 확인 위한 간단히 북마크 리스트 조회
+    def get(self, request, userId=""):
+        try:
+            user = User.objects.get(id=userId)
+        except User.DoesNotExist:
+            return JsonResponse({"message":"Requested user does not exist."})
+        bookmarks = Bookmark.objects.filter(user=user)
+        serializer = BookmarkSimpleSerialiser(bookmarks, many=True)
+        return JsonResponse(serializer.data, safe=False)
+        
 class FileUploadView(APIView):
     s3_client = CRUD()
 
