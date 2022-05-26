@@ -6,20 +6,11 @@ from rest_framework.views import APIView
 
 from file.models import Bookmark, File
 from user.models import User
-from file.serializers import BookmarkSerializer, BookmarkUserSerializer, FileSerializer
+from file.serializers import BookmarkSerializer, FileSerializer
 
 from file.storages import CRUD
 
 import json
-
-class BookmarkViewSet(viewsets.ViewSet):
-    lookup_field = "userId"
-
-    def list(self, request, userId):
-        user = User.objects.get(id=userId)
-        queryset = user.bookmarks.all()
-        serializer = BookmarkSerializer(queryset, many=True)
-        return Response(serializer.data)
 
 class BookmarkDetailView(APIView): # 하나의 북마크 조회
     def delete(self, request, userId="", bookmarkId=""):
@@ -32,16 +23,8 @@ class BookmarkDetailView(APIView): # 하나의 북마크 조회
         else:
             return JsonResponse({"message": "Request user is not owner of requested bookmark."})
 
-    def get(self, userId = "", bookmarkId=""):
-        print(userId, bookmarkId, "me!!")
-        bookmark = Bookmark.objects.filter(id = bookmarkId)
-        print(bookmark)
-        serialzer = BookmarkUserSerializer(bookmark)
-        return JsonResponse(serialzer.data)
-
 class BookmarkView(APIView): # 사용자의 북마크 리스트 조회 또는 북마크 추가
     def get(self, request, userId=""): # 완료
-        print("its wrong url!!")
         user = User.objects.get(id = userId)
         bookmarks = Bookmark.objects.filter(user = user)
         serializer = BookmarkSerializer(bookmarks, many=True)
@@ -56,7 +39,6 @@ class BookmarkView(APIView): # 사용자의 북마크 리스트 조회 또는 �
         bookmark.save();
         serializer = BookmarkSerializer(bookmark)
         return JsonResponse(serializer.data)
-        
 
 
 class FileUploadView(APIView):
