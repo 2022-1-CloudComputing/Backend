@@ -97,16 +97,21 @@ class FolderCreate(APIView):
 
         # 폴더 DB에 생성
         serializers = FolderSerializer(data=request.data)
+
         if not serializers.is_valid():
             return Response(serializers.errors, content_type="application/json", status=status.HTTP_400_BAD_REQUEST)
         serializers.save()
 
         # S3 Client 생성
+
+        print(request.headers)
+
         s3_client = get_s3_client(
             request.headers['AccessKeyId'],
             request.headers['SecretKey'],
             request.headers['SessionToken'],
         )
+        
 
         upload_folder(s3_client, '{0}/{1}{2}'.format(
             request.data['id'], request.data['path'],request.data['name']

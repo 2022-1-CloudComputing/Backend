@@ -28,6 +28,7 @@ from rest_framework.views import APIView
 from rest_framework.response import Response
 
 from user.serializers import UserSerializer
+from file.serializers import *
 from user.auth import Cognito
 from user.models import User
 
@@ -81,15 +82,25 @@ class Signup(APIView):
             #     name=request.data['name']
             # )
 
+            # DB에 User 정보 저장
             serializers = UserSerializer(data={
                 'username': request.data['id'],
                 'email':request.data['email'],
                 'password':hashcode,
                 'name':request.data['name'],
             })
-            print(serializers.is_valid())
+            # print(serializers.is_valid())
             if serializers.is_valid():
                 serializers.save()
+
+            # DB에 User의 Root 폴더 생성
+            # serializers = FolderSerializer(data=[
+            #     {
+            #         'id': request.data['id'],
+            #         'name'
+            #     }
+            # ])
+            
 
             cog = Cognito()
             cog.sign_up(
