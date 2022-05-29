@@ -1,6 +1,6 @@
 import jwt
 import boto3
-from file.models import Folder
+#from file.models import Folder
 from dropbox.settings import AWS_ACCESS_KEY_ID, AWS_SECRET_ACCESS_KEY, COGNITO_USER_POOL_ID,COGNITO_APP_CLIENT_ID,COGNITO_IDENTITY_POOL_ID,AWS_ACCOUNT_ID,COGNITO_REGION
 
 class Cognito():
@@ -76,12 +76,12 @@ class Cognito():
         # Get User info
         user_claims = jwt.decode(id_token, verify=False)
 
-        #print("test")
-        
-        # Create root folder object
-        if not Folder.objects.filter(path=response['IdentityId']+'/root/').exists():
-            Folder.objects.create(path=response['IdentityId']+'/root/', parent_folder_id=None, folder_name='root')
-        root_folder_id = Folder.objects.get(path=response['IdentityId']+'/root/').folder_id
+        print(user_claims)
+
+        # # Create root folder object
+        # if not Folder.objects.filter(path=response['IdentityId']+'/root/').exists():
+        #     Folder.objects.create(path=response['IdentityId']+'/root/', parent_folder_id=None, folder_name='root')
+        # root_folder_id = Folder.objects.get(path=response['IdentityId']+'/root/').folder_id
         # User Token
         result = {
             'User': {
@@ -89,7 +89,7 @@ class Cognito():
                 'sub': user_claims['sub'],
                 'name': user_claims['name'],
                 'email': user_claims['email'],
-                'root_folder_id': root_folder_id
+                'root_folder_id': 0     #root_folder_id
             },
             'IdentityId': response['IdentityId'],
             'IdToken': id_token,

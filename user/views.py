@@ -27,6 +27,7 @@ from rest_framework import viewsets
 from rest_framework.views import APIView
 from rest_framework.response import Response
 
+from user.serializers import UserSerializer
 from user.auth import Cognito
 from user.models import User
 
@@ -35,20 +36,32 @@ class Login(APIView):
         # 파라미터가 전부 입력되었는지 확인
         required_keys = ['id', 'pw']
         if all(it in request.POST for it in required_keys):
-            # if User.objects.filter(username=request.POST['id']).count() == 0:
-            #     return Response({'message': '존재하지 않는 아이디입니다.'}, status=400)
+            if User.objects.filter(username=request.POST['id']).count() == 0:
+                return Response({'message': '존재하지 않는 아이디입니다.'}, status=400)
 
             username = request.POST['id']
             password = request.POST['pw']
             print(username, password)
+
+            
             #hashcode = hashlib.md5(password.encode('utf-8')).hexdigest()
-            # user = authenticate(username=username, password=hashcode)
+            #user = authenticate(username=username, password=request.POST['id'])
 
             # if user is not None:
             #     login(request, user)
             #hashcode = hashlib.md5(request.POST['pw'].encode('utf-8')).hexdigest()
             cog = Cognito()
             result = cog.sign_in_admin(username=username, password=password)
+
+            serializers = UserSerializer(data={
+                'id': request.data['user_id'],
+            })
+            if serializers.is_valid():
+                serializers.save()
+
+            
+
+
             return Response(result, status=200)
             # else:
                 # return Response({'message': '아이디 혹은 비밀번호가 잘못되었습니다.'}, status=401)
@@ -188,7 +201,7 @@ class Resetpw(APIView):
 
         required_keys = ['id', 'pw', 'confirmation_code']
         if all(it in request.POST for it in required_keys):
-            hashcode = hashlib.md5(request.POST['pw'].encode('utf-8')).hexdigest()
+            #hashcode = hashlib.md5(request.POST['pw'].encode('utf-8')).hexdigest()
 
             # user = User.objects.get(username=request.POST['id'])
             # user.password = hashcode
@@ -197,7 +210,7 @@ class Resetpw(APIView):
             cog = Cognito()
             resp = cog.confirm_forgot_password(
                 username=request.POST['id'],
-                password=hashcode,
+                password=request.POST['pw'], #hashcode,
                 code=request.POST['confirmation_code']
             )
 
