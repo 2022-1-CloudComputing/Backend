@@ -5,10 +5,11 @@ from rest_framework.response import Response
 from rest_framework.views import APIView
 from user.models import User
 
-from file.models import Bookmark, File
-from file.serializers import BookmarkSerializer, FileSerializer
+from file.models import Bookmark, File, Tag
+from file.serializers import BookmarkSerializer, FileSerializer, TagSerializer
 from file.storages import CRUD
 
+import json
 
 class BookmarkViewSet(viewsets.ViewSet):
     lookup_field = "userId"
@@ -83,3 +84,64 @@ class FileUploadView(APIView):
                 return JsonResponse({"message": "fail update"})
         else:
             return JsonResponse({"message": "invalid requests"})
+
+
+
+
+
+class TagSearchView(APIView):
+    # 태그로 파일 리스트 검색
+    def get(self, request, userId="", tagName=""):
+        try:
+            user=  User.objects.get(id=userId)
+        except User.DoesNotExist:
+            return JsonResponse({"message":"Requested user does not exist."})
+        tags = Tag.objects.filter(user=user).filter(name=tagName)
+        serializer = TagSerializer(tags, many=True)
+        return JsonResponse(serializer.data, safe=False)
+
+class TagView(APIView):
+    # 태그 추가
+    def post(self, request, userId=""):
+        received_json_data = json.loads(request.body.decode("utf-8"))
+        fileId = received_json_data['fileId']
+        tagName = received_json_data['tagName']
+        try:
+            user = User.objects.get(id=userId)
+        except User.DoesNotExist:
+            return JsonResponse({"message":"Requested user does not exist."})
+        try:
+            file = File.objects.get(id=fileId)
+        except File.DoesNotExist:
+            return JsonResponse({"message":"Requested file does not exist."})
+        
+        if (Tag.objects.filter(user=user, name=tagName).exists()):
+            return JsonResponse({"message":"Requested tag already exist."})
+        else:
+            tag = Tag(user=user,file=file,name=tagName)
+            tag.save()
+            serializer = TagSerializer(tag)
+            return JsonResponse(serializer.data)
+
+    # 태그 삭제
+    def delete(self, request, userId="", fileId=""):
+        received_json_data = json.loads(request.body.decode("utf-8"))
+        tagName = received_json_data['tagName']
+        try:
+            user = User.objects.get(id=userId)
+        except User.DoesNotExist:
+            return JsonResponse({"message":"Requested user does not exist."})
+        try:
+            file = File.objects.get(id=fileId)
+        except File.DoesNotExist:
+            return JsonResponse({"message":"Requested file does not exist."})
+        try:
+            tag = Tag.objects.get(file=fileId, name=tagName)
+        except Tag.DoesNotExist:
+            return JsonResponse({"message":"Requested tag does not exist."})
+        tagUserId = tag.user.id
+        if (int(tagUserId)==int(userId)):
+            tag.delete()
+            return JsonResponse({"message": "Tag successfully deleted."})
+        else:
+            return JsonResponse({"message": "Request user is not owner of requested tag."})
