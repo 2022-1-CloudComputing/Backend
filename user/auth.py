@@ -1,7 +1,28 @@
 import jwt
 import boto3
+import datetime
+import botocore.exceptions
 #from file.models import Folder
 from dropbox.settings import AWS_ACCESS_KEY_ID, AWS_SECRET_ACCESS_KEY, COGNITO_USER_POOL_ID,COGNITO_APP_CLIENT_ID,COGNITO_IDENTITY_POOL_ID,AWS_ACCOUNT_ID,COGNITO_REGION
+
+
+
+# Token의 Valid 여부 파악
+def is_token_valid(token, user_id):
+    token_info = jwt.decode(token, verify=False)
+    # print("***")
+    # print(token_info['cognito:username'])
+    # print("***")
+
+    # Token이 Expired인지 확인
+    if datetime.datetime.utcnow() > datetime.datetime.utcfromtimestamp(token_info['exp']):
+        return False
+
+    # Token의 User ID와 매칭이 되는지 확인
+    if user_id != token_info['cognito:username']:
+        return False
+
+    return True
 
 class Cognito():
     region = COGNITO_REGION

@@ -8,7 +8,7 @@ class File(models.Model):
     title = models.CharField(max_length=200, null=True)  # 파일 이름
     file = models.FileField(blank=False, upload_to="media")  # 파일 자체
     file_path = models.CharField(max_length=200, null=False)  # 파일 저장 경로
-    owner = models.ForeignKey(User, on_delete=models.CASCADE, null=False)
+    owner = models.ForeignKey('user.User', on_delete=models.CASCADE, null=False)
     created_at = models.DateTimeField(auto_now_add=True)  # 생성 일자
 
     def __str__(self):
@@ -28,7 +28,7 @@ class Folder(models.Model):
     parent_id = models.ForeignKey(
         'self', on_delete=models.CASCADE, null=True, db_column='parent_id')
     user_id = models.ForeignKey(
-        'User', on_delete=models.CASCADE, db_column='id')
+        'user.User', on_delete=models.CASCADE, db_column='id')  #user.User? user는 app같은데
     name = models.CharField(max_length=255)
     path = models.CharField(max_length=255, null=True, blank=True)
     created_at = models.DateTimeField(auto_now_add=True, editable=False)

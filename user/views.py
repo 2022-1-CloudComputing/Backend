@@ -35,32 +35,23 @@ class Login(APIView):
     def post(self, request):
         # 파라미터가 전부 입력되었는지 확인
         required_keys = ['id', 'pw']
-        if all(it in request.POST for it in required_keys):
-            if User.objects.filter(username=request.POST['id']).count() == 0:
+        if all(it in request.data for it in required_keys):
+            if User.objects.filter(username=request.data['id']).count() == 0:
                 return Response({'message': '존재하지 않는 아이디입니다.'}, status=400)
 
-            username = request.POST['id']
-            password = request.POST['pw']
+            username = request.data['id']
+            password = request.data['pw']
             print(username, password)
 
             
             #hashcode = hashlib.md5(password.encode('utf-8')).hexdigest()
-            #user = authenticate(username=username, password=request.POST['id'])
+            #user = authenticate(username=username, password=request.data['id'])
 
             # if user is not None:
             #     login(request, user)
-            #hashcode = hashlib.md5(request.POST['pw'].encode('utf-8')).hexdigest()
+            #hashcode = hashlib.md5(request.data['pw'].encode('utf-8')).hexdigest()
             cog = Cognito()
             result = cog.sign_in_admin(username=username, password=password)
-
-            serializers = UserSerializer(data={
-                'id': request.data['user_id'],
-            })
-            if serializers.is_valid():
-                serializers.save()
-
-            
-
 
             return Response(result, status=200)
             # else:
@@ -73,39 +64,54 @@ class Signup(APIView):
     def post(self, request):        
         # 파라미터가 전부 입력되었는지 확인
         required_keys = ['id', 'pw', 'email', 'name']
-        print(request.POST)
-        if all(it in request.POST for it in required_keys):
-            if User.objects.filter(username=request.POST['id']).count():
+        #print(request.POST)
+        if all(it in request.data for it in required_keys):
+            if User.objects.filter(username=request.data['id']).count():
                 return Response({'message': '이미 존재하는 아이디입니다.'}, status=400)
-            if User.objects.filter(email=request.POST['email']).count():
+            if User.objects.filter(email=request.data['email']).count():
                 return Response({'message': '이미 존재하는 이메일입니다.'}, status=400)
 
 
             """password hash로 하니까 대문자 소문자 적으라해서 에러남.."""
-            #hashcode = hashlib.md5(request.POST['pw'].encode('utf-8')).hexdigest()
+            hashcode = hashlib.md5(request.data['pw'].encode('utf-8')).hexdigest()
             # user = User.objects.create_user(
-            #     username=request.POST['id'],
-            #     email=request.POST['email'],
+            #     username=request.data['id'],
+            #     email=request.data['email'],
             #     password=hashcode,
-            #     name=request.POST['name']
+            #     name=request.data['name']
             # )
+
+            serializers = UserSerializer(data={
+                'username': request.data['id'],
+                'email':request.data['email'],
+                'password':hashcode,
+                'name':request.data['name'],
+            })
+            print(serializers.is_valid())
+            if serializers.is_valid():
+                serializers.save()
 
             cog = Cognito()
             cog.sign_up(
-                username=request.POST['id'],
-                password=request.POST['pw'],
+                username=request.data['id'],
+                password=request.data['pw'],
                 UserAttributes=[
                     {
                         'Name': 'email',
-                        'Value': request.POST['email']
+                        'Value': request.data['email']
                     },
                     {
                         'Name': 'name',
-                        'Value': request.POST['name']
+                        'Value': request.data['name']
                     }
                 ]
             )
-            cog.confirm_sign_up(username=request.POST['id'])
+            cog.confirm_sign_up(username=request.data['id'])
+            
+            # print(request.data)
+
+            
+
             return Response({'message': '회원가입이 성공하였습니다.'}, status=200)
 
         # 파라미터가 누락된 경우
