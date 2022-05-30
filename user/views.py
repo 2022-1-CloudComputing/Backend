@@ -26,11 +26,16 @@ from django.contrib.auth import authenticate, login
 from rest_framework import viewsets
 from rest_framework.views import APIView
 from rest_framework.response import Response
+from rest_framework import status
 
 from user.serializers import UserSerializer
-from file.serializers import *
 from user.auth import Cognito
 from user.models import User
+
+from file.serializers import *
+from file.folders3 import get_s3_client, upload_folder, delete_folder_file
+from dropbox.settings import AWS_ACCESS_KEY_ID, AWS_SECRET_ACCESS_KEY
+
 
 class Login(APIView):
     def post(self, request):
@@ -82,26 +87,6 @@ class Signup(APIView):
             #     name=request.data['name']
             # )
 
-            # DB에 User 정보 저장
-            serializers = UserSerializer(data={
-                'username': request.data['id'],
-                'email':request.data['email'],
-                'password':hashcode,
-                'name':request.data['name'],
-            })
-            # print(serializers.is_valid())
-            if serializers.is_valid():
-                serializers.save()
-
-            # DB에 User의 Root 폴더 생성
-            # serializers = FolderSerializer(data=[
-            #     {
-            #         'id': request.data['id'],
-            #         'name'
-            #     }
-            # ])
-            
-
             cog = Cognito()
             cog.sign_up(
                 username=request.data['id'],
@@ -118,9 +103,40 @@ class Signup(APIView):
                 ]
             )
             cog.confirm_sign_up(username=request.data['id'])
-            
-            # print(request.data)
 
+            # DB에 User 정보 저장
+            serializers = UserSerializer(data={
+                'username': request.data['id'],
+                'email':request.data['email'],
+                'password':hashcode,
+                'name':request.data['name'],
+            })
+            # print(serializers.is_valid())
+            if serializers.is_valid():
+                serializers.save()
+
+            print(User.objects.filter(email=request.data['email']))
+
+            #DB에 User의 Root 폴더 생성
+            serializers = FolderSerializer(data={
+                'user_id': request.data['id'],
+                'name': request.data['id'],
+                'path': '',
+            })       #many=True
+            if not serializers.is_valid():
+                return Response(serializers.errors, content_type="application/json",status=status.HTTP_400_BAD_REQUEST)
+            serializers.save()
+            
+            # AWS 관리자 계정으로 S3에 회원가입하는 User의 Root 폴더 생성
+            # 관리자 키로 S3 Client 생성
+            s3_client = get_s3_client(
+                AWS_ACCESS_KEY_ID, AWS_SECRET_ACCESS_KEY
+            )
+
+            # S3 User의 Root 폴더에 해당하는 Key 생성
+            upload_folder(s3_client, "/".join([
+                request.data['id'], ''
+            ]))
             
 
             return Response({'message': '회원가입이 성공하였습니다.'}, status=200)

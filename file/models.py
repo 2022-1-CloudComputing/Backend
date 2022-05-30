@@ -28,7 +28,7 @@ class Folder(models.Model):
     parent_id = models.ForeignKey(
         'self', on_delete=models.CASCADE, null=True, db_column='parent_id')
     user_id = models.ForeignKey(
-        'user.User', on_delete=models.CASCADE, db_column='user_id')  #user.User? user는 app같은데
+        'user.User', on_delete=models.CASCADE, db_column='user_id',to_field='username')  #user.User? user는 app같은데
     name = models.CharField(max_length=255)
     path = models.CharField(max_length=255, null=True, blank=True)
     created_at = models.DateTimeField(auto_now_add=True, editable=False)
