@@ -61,8 +61,12 @@ MIDDLEWARE = [
 ]
 
 # REST_FRAMEWORK = {
-#     "DEFAULT_PERMISSION_CLASSES": ("user.api.permissions.DenyAny",),
-#     "DEFAULT_AUTHENTICATION_CLASSES": ("rest_framework_jwt.authentication.JSONWebTokenAuthentication"),  # cognito
+#     'DEFAULT_PERMISSION_CLASSES': (
+#         'user.api.permissions.DenyAny',
+#     ),
+#     'DEFAULT_AUTHENTICATION_CLASSES' : (
+#         'rest_framework_jwt.authentication.JSONWebTokenAuthentication'    #cognito
+#     )
 # }
 
 ROOT_URLCONF = "dropbox.urls"
@@ -153,4 +157,35 @@ AWS_SECRET_ACCESS_KEY = my_secrets.AWS.get("AWS_SECRET_ACCESS_KEY")
 AWS_ACCOUNT_ID = my_secrets.AWS.get("AWS_ACCOUNT_ID")
 AWS_REGION = my_secrets.AWS.get("AWS_REGION")
 AWS_STORAGE_BUCKET_NAME = my_secrets.AWS.get("AWS_STORAGE_BUCKET_NAME")
-AWS_DEFAULT_ACL = my_secrets.AWS.get("AWS_DEFAULT_ACL", "public-read")
+AWS_S3_CUSTOM_DOMAIN = "%s.s3.%s.amazonaws.com" % (AWS_STORAGE_BUCKET_NAME, AWS_REGION)
+AWS_AUTO_CREATE_BUCKET = True
+AWS_S3_SECURE_URLS = False
+
+AWS_S3_OBJECT_PARAMETERS = {"CacheControl": "max-age=86400"}
+AWS_DEFAULT_ACL = "public-read"
+
+
+# https://velog.io/@jongwho/AWS-Cognito-DRF-%EB%A1%9C%EA%B7%B8%EC%9D%B8-%EA%B5%AC%ED%98%84%ED%95%98%EA%B8%B0with-React1
+# cognito
+COGNITO_REGION = my_secrets.COGNITO.get("COGNITO_REGION")
+COGNITO_USER_POOL_ID = my_secrets.COGNITO.get("COGNITO_USER_POOL_ID")
+COGNITO_AUDIENCE = my_secrets.COGNITO.get("COGNITO_AUDIENCE")  # None
+# COGNITO_POOL_URL = my_secrets.COGNITO.get("COGNITO_POOL_URL")
+COGNITO_IDENTITY_POOL_ID = my_secrets.COGNITO.get("COGNITO_IDENTITY_POOL_ID")
+COGNITO_APP_CLIENT_ID = my_secrets.COGNITO.get("COGNITO_APP_CLIENT_ID")
+
+# COGNITO_POOL_URL = f'https://cognito-idp.{COGNITO_AWS_REGION}.amazonaws.com/{COGNITO_AWS_USER_POOL}/.well-known/jwks/json'
+# jwks = requests.get(COGNITO_POOL_URL).json()
+# rsa_keys = {key['kid']: json.dumps(key) for key in jwks['keys']}
+
+# JWT_AUTH = {
+#     # Login Handler
+#     'JWT_PAYLOAD_GET_USERNAME_HANDLER': 'cognito_auth.utils.jwt_utils.user_info_handler',
+#     # Decode Handler
+#     'JWT_DECODE_HANDLER': 'cognito_auth.utils.jwt_utils.cognito_jwt_decoder',
+#     'JWT_PUBLIC_KEY': rsa_keys,
+#     'JWT_ALGORITHM': 'RS256',
+#     'JWT_AUDIENCE': COGNITO_AUDIENCE,
+#     'JWT_ISSUER': COGNITO_POOL_URL,
+#     'JWT_AUTH_HEADER_PREFIX': 'Bearer',
+# }
