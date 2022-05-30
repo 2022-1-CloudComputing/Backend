@@ -70,7 +70,7 @@ class Signup(APIView):
     def post(self, request):        
         # 파라미터가 전부 입력되었는지 확인
         required_keys = ['id', 'pw', 'email', 'name']
-        #print(request.POST)
+        #print(request.data)
         if all(it in request.data for it in required_keys):
             if User.objects.filter(username=request.data['id']).count():
                 return Response({'message': '이미 존재하는 아이디입니다.'}, status=400)
@@ -80,6 +80,7 @@ class Signup(APIView):
 
             """password hash로 하니까 대문자 소문자 적으라해서 에러남.."""
             hashcode = hashlib.md5(request.data['pw'].encode('utf-8')).hexdigest()
+
             # user = User.objects.create_user(
             #     username=request.data['id'],
             #     email=request.data['email'],
@@ -166,10 +167,10 @@ class Dropout(APIView):
         access_token = request.headers['Authorization'].replace('Bearer ', '')
 
         claims = jwt.decode(access_token, verify=False)
-        # user = User.objects.filter(username=claims['username'])
-        # if user.count() == 0:
-        #     return Response({'message': '이미 탈퇴 처리된 계정입니다.'}, status=400)
-        # user.delete()
+        user = User.objects.filter(username=claims['username'])
+        if user.count() == 0:
+            return Response({'message': '이미 탈퇴 처리된 계정입니다.'}, status=400)
+        user.delete()
 
         cog = Cognito()
         resp = cog.delete_user(access_token)
@@ -196,14 +197,14 @@ class Info(APIView):
         access_token = request.headers['Authorization'].replace('Bearer ', '')
 
         required_keys = ['old_pw', 'new_pw']
-        if all(it in request.POST for it in required_keys):
+        if all(it in request.data for it in required_keys):
             
             claims = jwt.decode(access_token, verify=False)
             user = User.objects.filter(username=claims['username'])[0]
-            user.set_password(request.POST['new_pw'])
+            user.set_password(request.data['new_pw'])
 
-            hashed_old_pw = hashlib.md5(request.POST['old_pw'].encode('utf-8')).hexdigest()
-            hashed_new_pw = hashlib.md5(request.POST['new_pw'].encode('utf-8')).hexdigest()
+            hashed_old_pw = hashlib.md5(request.data['old_pw'].encode('utf-8')).hexdigest()
+            hashed_new_pw = hashlib.md5(request.data['new_pw'].encode('utf-8')).hexdigest()
 
             cog = Cognito()
             resp = cog.change_password(access_token, hashed_old_pw, hashed_new_pw)
@@ -220,9 +221,9 @@ class Findpw(APIView):
     def post(self, request):
 
         required_keys = ['id']
-        if all(it in request.POST for it in required_keys):
+        if all(it in request.data for it in required_keys):
             cog = Cognito()
-            resp = cog.forgot_password(username=request.POST['id'])
+            resp = cog.forgot_password(username=request.data['id'])
 
             return Response(resp, status=200)
 
@@ -233,18 +234,18 @@ class Resetpw(APIView):
     def post(self, request):
 
         required_keys = ['id', 'pw', 'confirmation_code']
-        if all(it in request.POST for it in required_keys):
-            #hashcode = hashlib.md5(request.POST['pw'].encode('utf-8')).hexdigest()
+        if all(it in request.data for it in required_keys):
+            hashcode = hashlib.md5(request.data['pw'].encode('utf-8')).hexdigest()
 
-            # user = User.objects.get(username=request.POST['id'])
-            # user.password = hashcode
-            # user.save()
+            user = User.objects.get(username=request.data['id'])
+            user.password = hashcode
+            user.save()
 
             cog = Cognito()
             resp = cog.confirm_forgot_password(
-                username=request.POST['id'],
-                password=request.POST['pw'], #hashcode,
-                code=request.POST['confirmation_code']
+                username=request.data['id'],
+                password=request.data['pw'], #hashcode,
+                code=request.data['confirmation_code']
             )
 
             if resp is not None:
