@@ -114,7 +114,7 @@ class FolderCreate(APIView):
         
 
         upload_folder(s3_client, '{0}/{1}{2}'.format(
-            request.data['id'], request.data['path'],request.data['name']
+            request.data['id'], request.data['path'],request.data['name'] #name은 파일이름
         ))
 
         return Response(serializers.data, content_type="application/json", status=status.HTTP_201_CREATED)
