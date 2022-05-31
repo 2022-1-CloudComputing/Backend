@@ -13,10 +13,15 @@ Including another URLconf
     1. Import the include() function: from django.urls import include, path
     2. Add a URL to urlpatterns:  path('blog/', include('blog.urls'))
 """
+from django.conf.urls import include  # 하나의 프로젝트에 여러개의 app 존재
 from django.contrib import admin
-from django.urls import path, include
+from django.urls import path  # , include
+
+# from user.views import UserProfileApiView  #일단 테스트용으로 프로젝트 url.py에다가 만듦
 
 urlpatterns = [
-    path("", include("file.urls")),
     path("admin/", admin.site.urls),
+    path("", include("file.urls")),  # 상대 경로 http://pythonstudy.xyz/python/article/311-URL-%EB%A7%A4%ED%95%91
+    path("auth/", include("user.urls")),
+    # path('api/v1/me', UserProfileApiView.as_view(), name='login')
 ]

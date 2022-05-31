@@ -1,124 +1,178 @@
-
 import logging
+import os
 
 import boto3
 from botocore.exceptions import ClientError
-from dropbox.settings import AWS_ACCESS_KEY_ID, AWS_DEFAULT_ACL, AWS_SECRET_ACCESS_KEY, AWS_STORAGE_BUCKET_NAME
+from my_secrets import AWS
+from PIL import Image
+from user.models import User
+
+from file.utils import is_image
+
+from .models import File, Folder
 
 
 class CRUD:
     def __init__(self):
         self.s3_client = boto3.client(
-            "s3", aws_access_key_id=AWS_ACCESS_KEY_ID, aws_secret_access_key=AWS_SECRET_ACCESS_KEY
+            "s3", aws_access_key_id=AWS.get("AWS_ACCESS_KEY_ID"), aws_secret_access_key=AWS.get("AWS_SECRET_ACCESS_KEY")
         )
         self.s3_resource = boto3.resource(
-            "s3", aws_access_key_id=AWS_ACCESS_KEY_ID, aws_secret_access_key=AWS_SECRET_ACCESS_KEY
+            "s3", aws_access_key_id=AWS.get("AWS_ACCESS_KEY_ID"), aws_secret_access_key=AWS.get("AWS_SECRET_ACCESS_KEY")
         )
-        self.bucket_name = AWS_STORAGE_BUCKET_NAME
+        self.bucket_name = AWS.get("AWS_STORAGE_BUCKET_NAME")
 
-    def upload(self, request, userId=""):
+    def upload(self, request, user_id):
         file = request.data.get("file")  # 파일 자체
         if not file:
             raise Exception("no file included")
 
-        file_path = request.data.get("file_path", "")  # 파일이 저장되어야 하는 주소
-        file_name = request.data.get("title", file.name)  # 파일 저장 이름 지정하지 않았다면 기본값이 저장됨
-        user_id = userId  #  request.user._auth_user_id
+        file_path = request.data.get("file_path", "")
+        file_path = file_path.replace("\\", "/")
+        try:
+            folder = Folder.objects.get(title=file_path)
+        except:  # Folder 객체 중복 방지
+            folder = Folder.objects.create(title=file_path)
 
-        file_path = f"{user_id}/{file_path}/{file_name}" if file_path else f"{user_id}/{file_name}"
+        file_name = request.data.get("title", file.name)  # 파일 저장 이름 지정하지 않았다면 선택한 파일 이름 그대로 저장됨
+
+        if "." not in file_name:
+            extention = file.name.split(".")[-1]
+            file_name = f"{file_name}.{extention}"
+        else:
+            extention = file_name.split(".")[-1]
+
+        user = User.objects.get(id=user_id)  # user_id를 준다
+        document = File.objects.create(title=file_name, folder=folder, owner=user)  # 파일 자체는 s3에 저장한다.
+
+        # user.files.append({"file_id": document.id, "folder_id": folder.id})
 
         try:
-            result = self.s3_resource.Bucket(self.bucket_name).put_object(
-                Body=file,
-                Key=file_path,
-                ACL=AWS_DEFAULT_ACL,
-                ContentType=file.content_type,
+            self.s3_resource.Bucket(self.bucket_name).put_object(
+                Body=file, Key=f"{user_id}/{document.id}.{extention}", ACL=AWS.get("AWS_DEFAULT_ACL")
             )
+            return True, {"file_id": document.id, "folder_id": folder.id}
+        except ClientError as e:
+            logging.error(e)
+            return False, ""
+
+    def delete(self, request, userId, fileId):
+        user = User.objects.get(id=userId)
+
+        try:
+            file_info = File.objects.get(id=fileId, owner=user)
+        except:
+            return False
+
+        extension = file_info.title.split(".")[-1]
+        try:
+            result = self.s3_client.delete_object(
+                Bucket=self.bucket_name,
+                Key=f"{userId}/{fileId}.{extension}",
+            )
+            file_info.delete()  # 객체도 삭제
+
         except ClientError as e:
             logging.error(e)
             return False
+
         return result
 
-    def delete(self, request, userId=""):
-        file_path = request.data.get("file_path", "")  # 삭제될 파일의 경로
-        user_id = userId  #  request.user._auth_user_id
-
-        file_path = f"{user_id}/{file_path}"
+    def download(self, request, userId, fileId):
+        user = User.objects.get(id=userId)
         try:
-            result = self.s3_client.delete_object(Bucket=self.bucket_name, Key=file_path)
+            file_info = File.objects.get(id=fileId, owner=user)
+        except:
+            return False, ""
+
+        try:
+            file_path = file_info.folder.__str__()
+            extension = file_info.title.split(".")[-1]
+
+            new_file_name = request.GET.get("save_as", file_info.title)  # 다운받을 이름 명시하지 않았다면 원래 파일 이름으로 저장
+
+            if "." not in new_file_name:
+                new_file_name += f".{extension}"
+            save_as = "/".join([userId, file_path, new_file_name])
+            save_as = save_as.replace("\\", "/")
+
+            temp_path = "media/media"
+            for path in save_as.split("/"):
+                if not os.path.exists(f"{temp_path}/{path}"):
+                    if "." in path:
+                        break
+                    os.mkdir(f"{temp_path}/{path}")
+                temp_path = f"{temp_path}/{path}"
+
+            self.s3_resource.meta.client.download_file(
+                Bucket=self.bucket_name, Key=f"{userId}/{fileId}.{extension}", Filename=f"media/media/{save_as}"
+            )
+
+            return True, f"media/media/{save_as}"
         except ClientError as e:
             logging.error(e)
-            return False
-        return result
+            return False, ""
 
-    # def read(self, request, userId=""):
-    #     try:
-    #         file_path = request.GET.get("file_path", "")  # 다운받아야 하는 파일의 경로
+    def update(self, request, userId, fileId):
 
-    #         orig_file_name = file_path.split("\\")[-1]
-    #         save_as = request.GET.get("save_as", file_path)
-
-    #         bucket = self.s3_resource.Bucket(self.bucket_name)
-    #         user_id = userId
-
-    #         file = bucket.Object(file_path)
-    #         ext = save_as.split(".")[-1]
-
-    #         check_exist_path = ""
-    #         for path in ["media", user_id, save_as]:
-    #             if "." in path:
-    #                 continue
-    #             check_exist_path += f"{path}/"
-    #             if not os.path.exists(check_exist_path):
-    #                 os.mkdir(check_exist_path)
-
-    #         file.download_file(Filename=f"media\{user_id}\{save_as}\preview.{ext}")
-    #         if is_image(ext):
-    #             source = Image.open(f"media\{user_id}\{save_as}\preview.{ext}")
-    #             source.thumbnail((128, 128), Image.ANTIALIAS)  # 썸네일 생성
-    #             source.save(f"media\{user_id}\{save_as}\thumbnail.{ext}", "jpeg")
-    #         return True
-    #     except:
-    #         return False
-
-    def download(self, request, userId=""):
+        user = User.objects.get(id=userId)
         try:
-            file_path = request.GET.get("file_path", "")  # 다운받아야 하는 파일의 경로
-            raw_file_path = file_path.split("\\")
-            root_path = "\\".join(raw_file_path[:-1])
-            orig_file_name = raw_file_path[-1]
-            new_file_name = request.GET.get("save_as", orig_file_name)  # 다운받을 이름 명시하지 않았다면 원래 파일 이름으로 저장
-            save_as = "\\".join([root_path, new_file_name])
+            file_info = File.objects.get(id=fileId, owner=user)
+        except:
+            return False, ""
 
-            bucket = self.s3_resource.Bucket(self.bucket_name)
-            user_id = userId
+        new_folder = request.data.get("folder", {}) or file_info.folder
+        try:
+            folder = Folder.objects.get(title=new_folder)
+        except:
+            folder = Folder.objects.create(title=new_folder)
 
-            file = bucket.Object(file_path)
-            file.download_file(Filename=f"media\\{user_id}\\{save_as}")
-        except ClientError as e:
-            logging.error(e)
+        extension = file_info.title.split(".")[-1]
+        title = request.data.get("title", "") or file_info.title
+
+        if "." not in title:
+            title += f".{extension}"
+
+        File.objects.update(folder=folder, title=title)
+
+        new_path = f"{userId}/{folder.__str__() }/{title}"
+        return True, new_path
+
+    def read(self, request, userId, fileId):
+
+        user = User.objects.get(id=userId)
+        try:
+            file_info = File.objects.get(id=fileId, owner=user)
+        except:
+            return False, ""
+
+        extension = file_info.title.split(".")[-1]
+        thumbnail_path = f"{userId}/preview_{fileId}.{extension}"
+
+        if os.path.exists(f"media/media/{userId}/preview_{fileId}.jpeg"):
+            print("already exists")
+            return True, f"media/media/{userId}/preview_{fileId}.jpeg"
+
+        temp_path = "media/media"
+        for path in thumbnail_path.split("/"):
+            if not os.path.exists(f"{temp_path}/{path}"):
+                if "." in path:
+                    break
+                os.mkdir(f"{temp_path}/{path}")
+            temp_path = f"{temp_path}/{path}"
+
+        try:
+            self.s3_resource.meta.client.download_file(
+                Bucket=self.bucket_name, Key=f"{userId}/{fileId}.{extension}", Filename=f"media/media/{thumbnail_path}"
+            )
+
+            if is_image(extension):
+                source = Image.open(f"media/media/{thumbnail_path}")
+                source.thumbnail((20, 20), Image.ANTIALIAS)  # 썸네일 생성
+                save_path = f"media/media/{thumbnail_path}".replace(f".{extension}", ".jpeg")
+                source.save(save_path, "jpeg")
+                # 원본 파일 삭제
+                os.remove(f"media/media/{thumbnail_path}")
+            return True, thumbnail_path
+        except:
             return False
-
-    def update(self, request, userId=""):
-        content = request.data.get("content", {})
-        user_id = userId
-
-        if content == "rename":
-            old_path = f"{user_id}\\{content.get('old_path')}"
-            new_path = f"{user_id}\\{content.get('new_path')}"
-            try:
-                bucket = self.s3_resource.Bucket(self.bucket_name)
-                for object in bucket.objects.filter(Prefix=old_path):
-                    srcKey = object.key
-                    if not srcKey.endswith("/"):
-                        destFileKey = new_path + "/" + srcKey.split("/")[-1]
-                        copysource = self.bucket_name + "/" + srcKey
-
-                        self.s3_client.Object(self.bucket_name, destFileKey).copy_from(CopySource=copysource)
-                        self.s3_client.Object(self.bucket_name, copysource).delete()
-            except ClientError as e:
-                logging.error(e)
-                return False
-            return True
-        else:  # 그 외 요청 받기
-            pass
