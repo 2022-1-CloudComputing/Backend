@@ -225,7 +225,7 @@ class FolderMove(APIView):
         parent = self.get_object(request.data["loc"])
 
         # S3 내의 폴더 Trash 폴더로 이동
-        # S3 Client 생성
+        # S3 Client  생성
         s3_client = get_s3_client(
             request.headers["AccessKeyId"], request.headers["SecretKey"], request.headers["SessionToken"],
         )
