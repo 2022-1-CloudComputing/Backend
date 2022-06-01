@@ -1,8 +1,7 @@
-from multiprocessing import context
+import json
 
 from django.http import JsonResponse
 from django.shortcuts import get_object_or_404, redirect, render
-from requests import request
 from rest_framework import status, viewsets
 from rest_framework.response import Response
 from rest_framework.views import APIView
@@ -26,69 +25,81 @@ class BookmarkViewSet(viewsets.ViewSet):
         return Response(serializer.data)
 
 
-def home(request, userId):
+class HomeView(APIView):
     # user가 가지고 있는 파일 다 볼 수 있음
-    try:
-        user = User.objects.get(id=userId)
-        files = File.objects.filter(owner=user)
-    except:
-        return JsonResponse({"message": "fail"})
+    def get(self, request, userId):
+        # if not is_token_valid(token=request.headers["IdToken"], user_id=userId):
+        #     return Response(status=status.HTTP_401_UNAUTHORIZED)
+        try:
+            user = User.objects.get(username=userId)
+            files = File.objects.filter(owner=user)
+            res = ["/".join(file.s3_url.split("/")[1:]) for file in files]
+            return Response({"message": "success", "file_list": res}, status=status.HTTP_200_OK)
 
-    res = [f"{userId}/{file.folder}/{file.title}" for file in files]
-    return JsonResponse({"message": "success", "file_list": res})
+        except Exception as e:
+            return Response({"message": "invalid requests", "error": e.__str__()}, status=status.HTTP_403_FORBIDDEN)
 
 
-def preview(request, userId, fileId):
+class FilePreviewView(APIView):
     s3_client = CRUD()
-    res, msg = s3_client.read(request, userId, fileId)
-    if res:
-        return JsonResponse({"message": "success download", "file_path": msg})
-    else:
-        return JsonResponse({"message": "fail download"})
+
+    def get(self, request, userId, fileId):
+        # permission 확인
+        if not is_token_valid(token=request.headers["IdToken"], user_id=userId):
+            return Response(status=status.HTTP_401_UNAUTHORIZED)
+
+        try:
+            response = self.s3_client.read(request, userId, fileId)
+            return response
+        except Exception as e:
+            return Response({"message": "invalid requests", "error": e.__str__()}, status=status.HTTP_403_FORBIDDEN)
 
 
 class FileUploadView(APIView):
     s3_client = CRUD()
 
     def post(self, request, userId):
-        if request.method == "POST" and len(request.data) != 0:
-            res, msg = self.s3_client.upload(request, userId)
-            if res:
-                return JsonResponse({"message": "success upload", **msg})
-            else:
-                return JsonResponse({"message": "fail upload"})
-        else:
-            return JsonResponse({"message": "invalid requests"})
+        # permission 확인
+        if not is_token_valid(token=request.headers["IdToken"], user_id=userId):
+            return Response(status=status.HTTP_401_UNAUTHORIZED)
+        try:
+            return self.s3_client.upload(request, userId)
+
+        except Exception as e:
+            return Response({"message": "invalid requests", "error": e.__str__()}, status=status.HTTP_403_FORBIDDEN)
 
     def delete(self, request, userId, fileId):
-        if request.method == "DELETE":
-            res = self.s3_client.delete(request, userId, fileId)  # body에 담아야 함?
-            if res:
-                return JsonResponse({"message": "success delete"})
-            else:
-                return JsonResponse({"message": "fail delete"})
-        else:
-            return JsonResponse({"message": "invalid requests"})
+        # permission 확인
+        if not is_token_valid(token=request.headers["IdToken"], user_id=userId):
+            return Response(status=status.HTTP_401_UNAUTHORIZED)
+
+        try:
+            return self.s3_client.delete(request, userId, fileId)
+
+        except Exception as e:
+            return Response({"message": "invalid requests", "error": e.__str__()}, status=status.HTTP_403_FORBIDDEN)
 
     def get(self, request, userId, fileId):
-        if request.method == "GET":
-            res, msg = self.s3_client.download(request, userId, fileId)
-            if res:
-                return JsonResponse({"message": "success download", "file_path": msg})
-            else:
-                return JsonResponse({"message": "fail download"})
-        else:
-            return JsonResponse({"message": "invalid requests"})
+        # permission 확인
+        if not is_token_valid(token=request.headers["IdToken"], user_id=userId):
+            return Response(status=status.HTTP_401_UNAUTHORIZED)
+
+        try:
+            return self.s3_client.download(request, userId, fileId)
+
+        except Exception as e:
+            return Response({"message": "invalid requests", "error": e.__str__()}, status=status.HTTP_403_FORBIDDEN)
 
     def put(self, request, userId, fileId):
-        if request.method == "PUT":
-            res, msg = self.s3_client.update(request, userId, fileId)
-            if res:
-                return JsonResponse({"message": "success update", "file_path": msg})
-            else:
-                return JsonResponse({"message": "fail update"})
-        else:
-            return JsonResponse({"message": "invalid requests"})
+        # permission 확인
+        if not is_token_valid(token=request.headers["IdToken"], user_id=userId):
+            return Response(status=status.HTTP_401_UNAUTHORIZED)
+
+        try:
+            return self.s3_client.update(request, userId, fileId)
+
+        except Exception as e:
+            return Response({"message": "invalid requests", "error": e.__str__()}, status=status.HTTP_403_FORBIDDEN)
 
 
 # s3 폴더 생성
@@ -96,6 +107,7 @@ class FolderCreate(APIView):
     def post(self, request):
         # permission 확인
         if not is_token_valid(token=request.headers["IdToken"], user_id=request.data["id"]):
+
             return Response(status=status.HTTP_403_FORBIDDEN)
 
         # 폴더 DB에 생성
@@ -110,9 +122,7 @@ class FolderCreate(APIView):
         print(request.headers)
 
         s3_client = get_s3_client(
-            request.headers["AccessKeyId"],
-            request.headers["SecretKey"],
-            request.headers["SessionToken"],
+            request.headers["AccessKeyId"], request.headers["SecretKey"], request.headers["SessionToken"],
         )
 
         upload_folder(s3_client, "{0}/{1}{2}".format(request.data["id"], request.data["path"], request.data["name"]))
@@ -149,9 +159,7 @@ class FolderDetail(APIView):
         # S3 내의 폴더 이름 변경
         # S3 Client 생성
         s3_client = get_s3_client(
-            request.headers["AccessKeyId"],
-            request.headers["SecretKey"],
-            request.headers["SessionToken"],
+            request.headers["AccessKeyId"], request.headers["SecretKey"], request.headers["SessionToken"],
         )
         # S3 Key 이름 변경
         rename_move_folder(
@@ -185,10 +193,7 @@ class FolderElements(APIView):
 
         # 3. 결과 응답
         return Response(
-            {
-                "folders": folder_serializers.data,
-                "files": files_serializers.data,
-            },
+            {"folders": folder_serializers.data, "files": files_serializers.data,},
             content_type="application/json",
             status=status.HTTP_202_ACCEPTED,
         )
@@ -213,9 +218,7 @@ class FolderMove(APIView):
         # S3 내의 폴더 Trash 폴더로 이동
         # S3 Client 생성
         s3_client = get_s3_client(
-            request.headers["AccessKeyId"],
-            request.headers["SecretKey"],
-            request.headers["SessionToken"],
+            request.headers["AccessKeyId"], request.headers["SecretKey"], request.headers["SessionToken"],
         )
         # S3 Key 이름 변경
         rename_move_folder(
