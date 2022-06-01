@@ -47,6 +47,7 @@ INSTALLED_APPS = [
     "rest_framework",
     "file",
     "user",
+    "corsheaders",
 
 ]
 
@@ -60,6 +61,9 @@ MIDDLEWARE = [
     "django.middleware.clickjacking.XFrameOptionsMiddleware",
     "django.contrib.auth.middleware.RemoteUserMiddleware", # RemoteUserMiddleware, congnito
 ]
+
+CORS_ALLOW_ALL_ORIGINS = True
+CORS_ALLOW_CREDENTIALS = True
 
 # REST_FRAMEWORK = {
 #     'DEFAULT_PERMISSION_CLASSES': (
