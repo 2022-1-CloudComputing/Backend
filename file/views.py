@@ -241,6 +241,22 @@ class FolderCreate(APIView):
         return Response(serializers.data, content_type="application/json", status=status.HTTP_201_CREATED)
 
 
+class GetRootFolder(APIView):
+
+    def get_object_by_user(self, username):
+        folder = get_object_or_404(Folder, user_id=username, parent_id = None)
+        return folder
+
+    def get(self, request):
+        if not is_token_valid(token=request.headers["IdToken"], user_id=request.GET["id"]):
+            return Response(status=status.HTTP_403_FORBIDDEN)
+
+        folder = self.get_object_by_user(request.GET["id"])
+        serializers = FolderSerializer(folder)
+        return Response(serializers.data, content_type="application/json", status=status.HTTP_200_OK)
+
+        
+
 class FolderDetail(APIView):
     # 폴더 불러오기
     def get_object(self, folder_id):
