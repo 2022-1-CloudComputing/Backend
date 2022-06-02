@@ -4,6 +4,12 @@ from rest_framework import serializers
 from file.models import Bookmark, File, Folder, Tag
 
 
+
+class FileSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = File
+        fields = ["file_id", "file", "title", "owner", "file_size", "folder_id", "created_at"]
+
 class BookmarkSerializer(serializers.ModelSerializer):
     file = FileSerializer()
     class Meta:
@@ -24,11 +30,6 @@ class TagSerializer(serializers.ModelSerializer):
         model = Tag
         fields = "__all__"
         requested_object = 'file'
-   
-class FileSerializer(serializers.ModelSerializer):
-    class Meta:
-        model = File
-        fields = ["file_id", "file", "title", "owner", "file_size", "folder_id", "created_at"]
 
 
 class FolderSerializer(serializers.ModelSerializer):
