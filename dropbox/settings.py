@@ -29,7 +29,8 @@ SECRET_KEY = my_secrets.DJANGO_SECRET_KEY["django_key"]
 # SECURITY WARNING: don't run with debug turned on in production!
 DEBUG = True
 
-ALLOWED_HOSTS = []
+ALLOWED_HOSTS = [my_secrets.REMOTE_HOST["A"],my_secrets.REMOTE_HOST["B"],my_secrets.REMOTE_HOST["C"]]
+
 
 
 # Application definition
@@ -44,9 +45,11 @@ INSTALLED_APPS = [
     "rest_framework",
     "file",
     "user",
+    'corsheaders'
 ]
 
 MIDDLEWARE = [
+    'corsheaders.middleware.CorsMiddleware',
     "django.middleware.security.SecurityMiddleware",
     "django.contrib.sessions.middleware.SessionMiddleware",
     "django.middleware.common.CommonMiddleware",
@@ -56,6 +59,9 @@ MIDDLEWARE = [
     "django.middleware.clickjacking.XFrameOptionsMiddleware",
     "django.contrib.auth.middleware.RemoteUserMiddleware",  # RemoteUserMiddleware, congnito
 ]
+
+CORS_ALLOW_ALL_ORIGINS = True
+CORS_ALLOW_CREDENTIALS = True
 
 # REST_FRAMEWORK = {
 #     'DEFAULT_PERMISSION_CLASSES': (
@@ -90,8 +96,8 @@ WSGI_APPLICATION = "dropbox.wsgi.application"
 # Database
 # https://docs.djangoproject.com/en/4.0/ref/settings/#databases
 
-# DATABASES = my_secrets.DATABASES
-DATABASES = {"default": {"ENGINE": "django.db.backends.sqlite3", "NAME": "mydatabase",}}  # 테스트 위해서 임시로 선언
+DATABASES = my_secrets.DATABASES
+#DATABASES = {"default": {"ENGINE": "django.db.backends.sqlite3", "NAME": "mydatabase",}}  # 테스트 위해서 임시로 선언
 
 
 # Password validation
