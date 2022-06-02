@@ -33,7 +33,16 @@ class HomeView(APIView):
         try:
             user = User.objects.get(username=userId)
             files = File.objects.filter(owner=user)
-            res = ["/".join(file.s3_url.split("/")[1:]) for file in files]
+            res = []
+            for file in files:
+                res.append(
+                    {
+                        "file_id": file.file_id,
+                        "file_path": "/".join(file.s3_url.split("/")[1:]),
+                        "title": file.title,
+                        "created_at": file.created_at,
+                    }
+                )
             return Response({"message": "success", "file_list": res}, status=status.HTTP_200_OK)
 
         except Exception as e:
@@ -216,7 +225,7 @@ class FolderMove(APIView):
         parent = self.get_object(request.data["loc"])
 
         # S3 내의 폴더 Trash 폴더로 이동
-        # S3 Client 생성
+        # S3 Client  생성
         s3_client = get_s3_client(
             request.headers["AccessKeyId"], request.headers["SecretKey"], request.headers["SessionToken"],
         )
