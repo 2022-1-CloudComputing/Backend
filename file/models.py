@@ -48,3 +48,8 @@ class File(models.Model):
 class Bookmark(models.Model):
     user = models.ForeignKey(User, on_delete=models.CASCADE, related_name="bookmarks")
     file = models.ForeignKey(File, on_delete=models.CASCADE, related_name="users")
+
+class Tag(models.Model):
+    user = models.ForeignKey(User, on_delete=models.CASCADE, related_name="tags")
+    file = models.ForeignKey(File, on_delete=models.CASCADE, related_name="tag_featured")
+    name = models.CharField(max_length=100, null=False)

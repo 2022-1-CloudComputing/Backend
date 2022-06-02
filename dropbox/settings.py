@@ -97,7 +97,9 @@ WSGI_APPLICATION = "dropbox.wsgi.application"
 # https://docs.djangoproject.com/en/4.0/ref/settings/#databases
 
 DATABASES = my_secrets.DATABASES
+
 #DATABASES = {"default": {"ENGINE": "django.db.backends.sqlite3", "NAME": "mydatabase",}}  # 테스트 위해서 임시로 선언
+
 
 
 # Password validation
