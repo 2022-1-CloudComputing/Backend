@@ -6,3 +6,4 @@ from .models import File, Folder, Tag
 admin.site.register(File)
 admin.site.register(Tag)
 admin.site.register(Folder)
+

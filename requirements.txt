@@ -2,11 +2,13 @@ asgiref==3.5.1
 boto3==1.22.9
 botocore==1.25.9
 Django==4.0.3
+django-cognito-jwt==0.0.3
 djangorestframework==3.13.1
 jmespath==1.0.0
 mysqlclient==2.1.0
 jmespath==1.0.0
 Pillow==9.1.0
+PyJWT==1.7.1
 python-dateutil==2.8.2
 pytz==2022.1
 s3transfer==0.5.2
