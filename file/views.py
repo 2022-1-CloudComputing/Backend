@@ -1,13 +1,13 @@
+from math import fabs
 import json
-
 from django.http import JsonResponse
 from django.shortcuts import get_object_or_404, redirect, render
 from rest_framework import status, viewsets
 from rest_framework.response import Response
 from rest_framework.views import APIView
-from user.auth import is_token_valid
 from user.models import User
-
+from file.serializers import *
+from user.auth import is_token_valid
 from file.folders3 import *
 from file.models import Bookmark, File, Folder
 from file.serializers import *
@@ -15,15 +15,59 @@ from file.serializers import BookmarkSerializer, FileSerializer
 from file.storages import CRUD
 
 
-class BookmarkViewSet(viewsets.ViewSet):
-    lookup_field = "userId"
+class BookmarkDetailView(APIView): # 하나의 북마크 삭제
+    def delete(self, request, userId="", bookmarkId=""):
+        try:
+            bookmark = Bookmark.objects.get(id = bookmarkId)
+        except Bookmark.DoesNotExist:
+            return JsonResponse({"message": "Requested Bookmark does not exist."})
+        
+        bookmarkUserId = bookmark.user.id;
+        if (int(bookmarkUserId)==int(userId)):
+            bookmark.delete();
+            return JsonResponse({"message": "Bookmark successfully deleted."})
+        else:
+            return JsonResponse({"message": "Request user is not owner of requested bookmark."})
 
-    def list(self, request, userId: int):
-        user = User.objects.get(id=userId)  # 원래 id인데 외부키 설정으로 인해 접근 오류가 뜸. 다음과 같이 수정
-        queryset = user.bookmarks.all()
-        serializer = BookmarkSerializer(queryset, many=True)
-        return Response(serializer.data)
+class BookmarkView(APIView): # 사용자의 북마크 리스트 조회 또는 북마크 추가
+    def get(self, request, userId=""):
+        try:
+            user = User.objects.get(id=userId)
+        except User.DoesNotExist:
+            return JsonResponse("Requested user does not exist.")
+        bookmarks = Bookmark.objects.filter(user = user)
+        serializer = BookmarkSerializer(bookmarks, many=True)
+        return JsonResponse(serializer.data, safe=False);
 
+    def post(self, request, userId=""):
+        received_json_data = json.loads(request.body.decode("utf-8"))
+        fileId = received_json_data['fileId']
+        try:
+            user = User.objects.get(id=userId)
+        except User.DoesNotExist:
+            return JsonResponse({"message":"Requested user does not exist."})
+        try:
+            file = File.objects.get(id = fileId);
+        except File.DoesNotExist:
+            return JsonResponse({"message":"Reqeusted File does not exist."})
+
+        if (Bookmark.objects.filter(user=user, file=file).exists()):
+            return JsonResponse({"message": "Bookmark already exists."})
+        else:
+            bookmark = Bookmark(user=user, file=file)
+            bookmark.save();
+            serializer = BookmarkSerializer(bookmark)
+            return JsonResponse(serializer.data)
+
+class BookmarkSimpleView(APIView): # 파일의 북마크 여부 확인 위한 간단히 북마크 리스트 조회
+    def get(self, request, userId=""):
+        try:
+            user = User.objects.get(id=userId)
+        except User.DoesNotExist:
+            return JsonResponse({"message":"Requested user does not exist."})
+        bookmarks = Bookmark.objects.filter(user=user)
+        serializer = BookmarkSimpleSerialiser(bookmarks, many=True)
+        return JsonResponse(serializer.data, safe=False)
 
 class HomeView(APIView):
     # user가 가지고 있는 파일 다 볼 수 있음
@@ -62,7 +106,6 @@ class FilePreviewView(APIView):
             return response
         except Exception as e:
             return Response({"message": "invalid requests", "error": e.__str__()}, status=status.HTTP_403_FORBIDDEN)
-
 
 class FileUploadView(APIView):
     s3_client = CRUD()

@@ -2,20 +2,25 @@ from rest_framework import serializers
 
 from file.models import Bookmark, File, Folder
 
-
-class BookmarkSerializer(serializers.ModelSerializer):
-    id = serializers.ReadOnlyField(source="file.id")
-    title = serializers.ReadOnlyField(source="file.title")
-
-    class Meta:
-        model = Bookmark
-        fields = ["id", "title"]
-
-
 class FileSerializer(serializers.ModelSerializer):
     class Meta:
         model = File
         fields = ["file_id", "file", "title", "owner", "file_size", "folder_id", "created_at"]
+
+
+class BookmarkSerializer(serializers.ModelSerializer):
+    file = FileSerializer()
+    class Meta:
+        model = Bookmark
+        fields = "__all__"
+        related_object = 'file'
+
+class BookmarkSimpleSerialiser(serializers.ModelSerializer):
+    fileId = serializers.ReadOnlyField(source='file.id')
+    class Meta:
+        model = Bookmark
+        fields = ['fileId']
+
 
 
 class FolderSerializer(serializers.ModelSerializer):
@@ -37,4 +42,3 @@ class FolderMoveSerializer(serializers.ModelSerializer):
             "parent_id",
             "path",
         )
-

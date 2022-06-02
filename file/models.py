@@ -4,6 +4,7 @@ from botocore import serialize
 from django.db import models
 from user.models import User
 
+
 # File 에 외래키로 폴더 지정 필요
 # parent_folder_id= models.ForeignKey('Folder', on_delete=models.CASCADE, null=True)
 
@@ -35,6 +36,7 @@ class File(models.Model):
     file_size = models.PositiveIntegerField(editable=False)  # 파일 크기
     folder_id = models.ForeignKey("Folder", on_delete=models.CASCADE, null=True, db_column="folder_id")
     s3_url = models.CharField(max_length=255)
+
 
     def __str__(self):
         return self.title
