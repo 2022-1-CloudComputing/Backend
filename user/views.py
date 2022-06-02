@@ -152,7 +152,7 @@ class Logout(APIView):
         return Response({"message": "로그아웃에 성공했습니다."}, status=200)
 
 
-class Dropout(APIView):
+class Dropout(APIView):  # 삭제할 때 user관련 폴더 삭제 안했음 ㅠ
     def delete(self, request):
         if "Authorization" not in request.headers:
             return Response({"message": "Access Token을 전달해주세요."}, status=401)
