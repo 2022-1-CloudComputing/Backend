@@ -1,71 +1,76 @@
-from math import fabs
 import json
+from math import fabs
+
 from django.http import JsonResponse
 from django.shortcuts import get_object_or_404, redirect, render
 from rest_framework import status, viewsets
 from rest_framework.response import Response
 from rest_framework.views import APIView
-from user.models import User
-from file.models import Bookmark, File, Tag, Folder
-from file.serializers import *
 from user.auth import is_token_valid
+from user.models import User
+
 from file.folders3 import *
+from file.models import Bookmark, File, Folder, Tag
+from file.serializers import *
 from file.storages import CRUD
 
 
-class BookmarkDetailView(APIView): # 하나의 북마크 삭제
+class BookmarkDetailView(APIView):  # 하나의 북마크 삭제
     def delete(self, request, userId="", bookmarkId=""):
         try:
-            bookmark = Bookmark.objects.get(id = bookmarkId)
+            bookmark = Bookmark.objects.get(id=bookmarkId)
         except Bookmark.DoesNotExist:
             return JsonResponse({"message": "Requested Bookmark does not exist."})
-        
-        bookmarkUserId = bookmark.user.id;
-        if (int(bookmarkUserId)==int(userId)):
-            bookmark.delete();
+
+        bookmarkUserId = bookmark.user.id
+        if int(bookmarkUserId) == int(userId):
+            bookmark.delete()
             return JsonResponse({"message": "Bookmark successfully deleted."})
         else:
             return JsonResponse({"message": "Request user is not owner of requested bookmark."})
 
-class BookmarkView(APIView): # 사용자의 북마크 리스트 조회 또는 북마크 추가
+
+class BookmarkView(APIView):  # 사용자의 북마크 리스트 조회 또는 북마크 추가
     def get(self, request, userId=""):
         try:
             user = User.objects.get(id=userId)
         except User.DoesNotExist:
             return JsonResponse("Requested user does not exist.")
-        bookmarks = Bookmark.objects.filter(user = user)
+        bookmarks = Bookmark.objects.filter(user=user)
         serializer = BookmarkSerializer(bookmarks, many=True)
-        return JsonResponse(serializer.data, safe=False);
+        return JsonResponse(serializer.data, safe=False)
 
     def post(self, request, userId=""):
         received_json_data = json.loads(request.body.decode("utf-8"))
-        fileId = received_json_data['fileId']
+        fileId = received_json_data["fileId"]
         try:
             user = User.objects.get(id=userId)
         except User.DoesNotExist:
-            return JsonResponse({"message":"Requested user does not exist."})
+            return JsonResponse({"message": "Requested user does not exist."})
         try:
-            file = File.objects.get(id = fileId);
+            file = File.objects.get(id=fileId)
         except File.DoesNotExist:
-            return JsonResponse({"message":"Reqeusted File does not exist."})
+            return JsonResponse({"message": "Reqeusted File does not exist."})
 
-        if (Bookmark.objects.filter(user=user, file=file).exists()):
+        if Bookmark.objects.filter(user=user, file=file).exists():
             return JsonResponse({"message": "Bookmark already exists."})
         else:
             bookmark = Bookmark(user=user, file=file)
-            bookmark.save();
+            bookmark.save()
             serializer = BookmarkSerializer(bookmark)
             return JsonResponse(serializer.data)
 
-class BookmarkSimpleView(APIView): # 파일의 북마크 여부 확인 위한 간단히 북마크 리스트 조회
+
+class BookmarkSimpleView(APIView):  # 파일의 북마크 여부 확인 위한 간단히 북마크 리스트 조회
     def get(self, request, userId=""):
         try:
             user = User.objects.get(id=userId)
         except User.DoesNotExist:
-            return JsonResponse({"message":"Requested user does not exist."})
+            return JsonResponse({"message": "Requested user does not exist."})
         bookmarks = Bookmark.objects.filter(user=user)
         serializer = BookmarkSimpleSerialiser(bookmarks, many=True)
         return JsonResponse(serializer.data, safe=False)
+
 
 class HomeView(APIView):
     # user가 가지고 있는 파일 다 볼 수 있음
@@ -80,7 +85,7 @@ class HomeView(APIView):
                 res.append(
                     {
                         "file_id": file.file_id,
-                        "file_path": "/".join(file.s3_url.split("/")[1:]),
+                        "file_path": "/".join(file.s3_url.split("/")[:-1]) + "/",
                         "title": file.title,
                         "created_at": file.created_at,
                     }
@@ -104,6 +109,7 @@ class FilePreviewView(APIView):
             return response
         except Exception as e:
             return Response({"message": "invalid requests", "error": e.__str__()}, status=status.HTTP_403_FORBIDDEN)
+
 
 class FileUploadView(APIView):
     s3_client = CRUD()
@@ -152,38 +158,37 @@ class FileUploadView(APIView):
             return Response({"message": "invalid requests", "error": e.__str__()}, status=status.HTTP_403_FORBIDDEN)
 
 
-
-
 class TagSearchView(APIView):
     # 태그로 파일 리스트 검색
     def get(self, request, userId="", tagName=""):
         try:
-            user=  User.objects.get(id=userId)
+            user = User.objects.get(id=userId)
         except User.DoesNotExist:
-            return JsonResponse({"message":"Requested user does not exist."})
+            return JsonResponse({"message": "Requested user does not exist."})
         tags = Tag.objects.filter(user=user).filter(name=tagName)
         serializer = TagSerializer(tags, many=True)
         return JsonResponse(serializer.data, safe=False)
+
 
 class TagView(APIView):
     # 태그 추가
     def post(self, request, userId=""):
         received_json_data = json.loads(request.body.decode("utf-8"))
-        fileId = received_json_data['fileId']
-        tagName = received_json_data['tagName']
+        fileId = received_json_data["fileId"]
+        tagName = received_json_data["tagName"]
         try:
             user = User.objects.get(id=userId)
         except User.DoesNotExist:
-            return JsonResponse({"message":"Requested user does not exist."})
+            return JsonResponse({"message": "Requested user does not exist."})
         try:
             file = File.objects.get(id=fileId)
         except File.DoesNotExist:
-            return JsonResponse({"message":"Requested file does not exist."})
-        
-        if (Tag.objects.filter(user=user, name=tagName).exists()):
-            return JsonResponse({"message":"Requested tag already exist."})
+            return JsonResponse({"message": "Requested file does not exist."})
+
+        if Tag.objects.filter(user=user, name=tagName).exists():
+            return JsonResponse({"message": "Requested tag already exist."})
         else:
-            tag = Tag(user=user,file=file,name=tagName)
+            tag = Tag(user=user, file=file, name=tagName)
             tag.save()
             serializer = TagSerializer(tag)
             return JsonResponse(serializer.data)
@@ -191,27 +196,26 @@ class TagView(APIView):
     # 태그 삭제
     def delete(self, request, userId="", fileId=""):
         received_json_data = json.loads(request.body.decode("utf-8"))
-        tagName = received_json_data['tagName']
+        tagName = received_json_data["tagName"]
         try:
             user = User.objects.get(id=userId)
         except User.DoesNotExist:
-            return JsonResponse({"message":"Requested user does not exist."})
+            return JsonResponse({"message": "Requested user does not exist."})
         try:
             file = File.objects.get(id=fileId)
         except File.DoesNotExist:
-            return JsonResponse({"message":"Requested file does not exist."})
+            return JsonResponse({"message": "Requested file does not exist."})
         try:
             tag = Tag.objects.get(file=fileId, name=tagName)
         except Tag.DoesNotExist:
-            return JsonResponse({"message":"Requested tag does not exist."})
+            return JsonResponse({"message": "Requested tag does not exist."})
         tagUserId = tag.user.id
-        if (int(tagUserId)==int(userId)):
+        if int(tagUserId) == int(userId):
             tag.delete()
             return JsonResponse({"message": "Tag successfully deleted."})
         else:
             return JsonResponse({"message": "Request user is not owner of requested tag."})
 
-        
 
 # s3 폴더 생성
 class FolderCreate(APIView):
@@ -242,9 +246,8 @@ class FolderCreate(APIView):
 
 
 class GetRootFolder(APIView):
-
     def get_object_by_user(self, username):
-        folder = get_object_or_404(Folder, user_id=username, parent_id = None)
+        folder = get_object_or_404(Folder, user_id=username, parent_id=None)
         return folder
 
     def get(self, request):
@@ -255,7 +258,6 @@ class GetRootFolder(APIView):
         serializers = FolderSerializer(folder)
         return Response(serializers.data, content_type="application/json", status=status.HTTP_200_OK)
 
-        
 
 class FolderDetail(APIView):
     # 폴더 불러오기

@@ -1,8 +1,7 @@
 import os
 
 from botocore.exceptions import ClientError
-from dropbox.settings import (AWS_DEFAULT_ACL, AWS_STORAGE_BUCKET_NAME,
-                              MEDIA_URL)
+from dropbox.settings import AWS_DEFAULT_ACL, AWS_STORAGE_BUCKET_NAME, MEDIA_URL
 from PIL import Image
 from rest_framework import status
 from rest_framework.response import Response
@@ -43,7 +42,7 @@ class CRUD:
         raw_folder = file_path.split("/")
         if len(raw_folder) <= 1:  # 폴더 경로가 없을 경우
             folder_path = ""
-            folder_name = ""
+            folder_name = user_id
         else:  # 폴더 경로가 있을 경우
             folder_name = raw_folder[-2] + "/" if raw_folder[-2] else ""
             folder_path = "/".join(raw_folder[:-2])
@@ -54,8 +53,14 @@ class CRUD:
         except Folder.DoesNotExist as e:
             raise Folder.DoesNotExist(e)
 
-        s3_url = f"{user_id}/{folder_path}{folder_name}{file_name}"
+        if user_id == folder_name:
+            s3_url = f"{folder_name}/{file_name}"
+        else:
+            t_user_id = f"{user_id}/"
+            s3_url = f"{t_user_id}{folder_path}{folder_name}{file_name}"
+
         user = User.objects.get(username=user_id)  # user_id를 준다
+
         file = File.objects.create(title=file_name, owner=user, folder_id=folder, file_size=file_size, s3_url=s3_url)
 
         s3_resource = get_s3_resource(
@@ -72,8 +77,8 @@ class CRUD:
                 "message": "success upload",
                 "file_id": file.file_id,
                 "file_name": file_name,
+                "file_path": "/".join(s3_url.split("/")[1:-1]),
                 "s3_url": s3_url,
-                "file_path": file_path,
                 "file_size": file.file_size,
                 "created_at": file.created_at,
             },
@@ -87,17 +92,23 @@ class CRUD:
         except Exception as e:
             raise Exception("file not exists")
 
+        folder = Folder.objects.get(folder_id=file.folder_id.folder_id)
+        folder_path = folder.path
+        folder_name = folder.name
+
+        s3_url = f"{userId}/{folder_path}{folder_name}{file.title}"
+
         try:
             s3_client = get_s3_client(
                 request.headers["AccessKeyId"], request.headers["SecretKey"], request.headers["SessionToken"],
             )
-            s3_client.delete_object(Bucket=self.bucket_name, Key=file.s3_url)
+            s3_client.delete_object(Bucket=self.bucket_name, Key=s3_url)
         except ClientError as e:
             return Response(
                 {"message": "fail delete", "error": e.__str__()}, status=status.HTTP_503_SERVICE_UNAVAILABLE
             )
 
-        file.delete()  # 객체도 삭제
+        # file.delete()  # 객체도 삭제
         return Response({"message": "success delete"}, status=status.HTTP_200_OK)
 
     def download(self, request, userId, fileId):
