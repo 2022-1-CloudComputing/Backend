@@ -1,7 +1,8 @@
 import os
 
 from botocore.exceptions import ClientError
-from dropbox.settings import AWS_DEFAULT_ACL, AWS_STORAGE_BUCKET_NAME, MEDIA_URL
+from dropbox.settings import (AWS_DEFAULT_ACL, AWS_STORAGE_BUCKET_NAME,
+                              MEDIA_URL)
 from PIL import Image
 from rest_framework import status
 from rest_framework.response import Response
@@ -96,7 +97,12 @@ class CRUD:
         folder_path = folder.path
         folder_name = folder.name
 
-        s3_url = f"{userId}/{folder_path}{folder_name}{file.title}"
+        if not folder_path and not folder_name:
+            s3_url = f"{userId}/{file.title}"
+        elif folder_name == userId:
+            s3_url = f"{userId}/{folder_path}{file.title}"
+        else:
+            s3_url = f"{userId}/{folder_path}{folder_name}{file.title}"
 
         try:
             s3_client = get_s3_client(
@@ -108,7 +114,7 @@ class CRUD:
                 {"message": "fail delete", "error": e.__str__()}, status=status.HTTP_503_SERVICE_UNAVAILABLE
             )
 
-        # file.delete()  # 객체도 삭제
+        file.delete()  # 객체도 삭제
         return Response({"message": "success delete"}, status=status.HTTP_200_OK)
 
     def download(self, request, userId, fileId):

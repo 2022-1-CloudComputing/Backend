@@ -88,6 +88,7 @@ class HomeView(APIView):
                         "file_path": "/".join(file.s3_url.split("/")[:-1]) + "/",
                         "title": file.title,
                         "created_at": file.created_at,
+                        "file_size": file.file_size,
                     }
                 )
             return Response({"message": "success", "file_list": res}, status=status.HTTP_200_OK)
@@ -126,8 +127,8 @@ class FileUploadView(APIView):
 
     def delete(self, request, userId, fileId):
         # permission 확인
-        if not is_token_valid(token=request.headers["IdToken"], user_id=userId):
-            return Response(status=status.HTTP_401_UNAUTHORIZED)
+        # if not is_token_valid(token=request.headers["IdToken"], user_id=userId):
+        #     return Response(status=status.HTTP_401_UNAUTHORIZED)
 
         try:
             return self.s3_client.delete(request, userId, fileId)
