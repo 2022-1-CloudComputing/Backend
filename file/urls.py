@@ -1,5 +1,5 @@
 from django.urls import include, path
-from file.views import BookmarkDetailView, BookmarkSimpleView, BookmarkView, FileShareView, FileUploadView, GetRootFolder, TagSearchView, TagView
+from file.views import BookmarkDetailView, BookmarkSimpleView, BookmarkView, FileUploadView, GetRootFolder, TagSearchView, TagView
 
 
 from file.views import (
@@ -11,7 +11,7 @@ from file.views import (
     FolderElements,
     FolderMove,
     HomeView,
-    FileShareView
+
 )
 
 urlpatterns = [
