@@ -11,6 +11,7 @@ from file.views import (
     FolderElements,
     FolderMove,
     HomeView,
+
 )
 
 urlpatterns = [
@@ -28,6 +29,7 @@ urlpatterns = [
     path("folder_root", GetRootFolder.as_view()),
     path("user/<userId>/search/tag/<tagName>", TagSearchView.as_view()),
     path("user/<userId>/file/tag/upload", TagView.as_view()),
-    path("user/<userId>/file/<fileId>/tag/delete", TagView.as_view())
+    path("user/<userId>/file/<fileId>/tag/delete", TagView.as_view()),
+    # path("user/<userId>/file/<fileId>/share", FileShareView.as_view())
   
 ]

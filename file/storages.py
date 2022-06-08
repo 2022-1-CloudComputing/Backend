@@ -1,7 +1,7 @@
 import os
 
 from botocore.exceptions import ClientError
-from dropbox.settings import (AWS_DEFAULT_ACL, AWS_STORAGE_BUCKET_NAME,
+from dropbox.settings import (AWS_DEFAULT_ACL, AWS_REGION, AWS_STORAGE_BUCKET_NAME,
                               MEDIA_URL)
 from PIL import Image
 from rest_framework import status
@@ -22,7 +22,6 @@ class CRUD:
         file_obj = request.data.get("file")  # 파일 자체
         if not file_obj:
             raise Exception("no file included")
-
         file_path = request.data.get("file_path", "")
         file_path = file_path.replace("\\", "/")
 
@@ -82,6 +81,7 @@ class CRUD:
                 "s3_url": s3_url,
                 "file_size": file.file_size,
                 "created_at": file.created_at,
+                "folder_id" : file.folder_id.folder_id
             },
             status=status.HTTP_201_CREATED,
         )
@@ -114,12 +114,14 @@ class CRUD:
                 {"message": "fail delete", "error": e.__str__()}, status=status.HTTP_503_SERVICE_UNAVAILABLE
             )
 
+
         file.delete()  # 객체도 삭제
         return Response({"message": "success delete"}, status=status.HTTP_200_OK)
 
     def download(self, request, userId, fileId):
         user = User.objects.get(username=userId)
         temp_path = MEDIA_URL
+        print(temp_path)
 
         try:
             file_info = File.objects.get(file_id=int(fileId), owner=user)
@@ -164,6 +166,19 @@ class CRUD:
             },
             status=status.HTTP_201_CREATED,
         )
+
+    # def share(self, request, userId, fileId):
+    #     user = User.objects.get(username=userId)
+
+    #     try:
+    #         file = File.objects.get(file_id=fileId, owner=user)
+    #     except Exception as e:
+    #         raise Exception("file not exists")
+
+
+    #     return Response({
+    #         "file_url": "https://{0}.s3.{1}.amazonaws.com/{2}".format(AWS_STORAGE_BUCKET_NAME, AWS_REGION,file.title)
+    #     })
 
     def update(self, request, userId, fileId):
         user = User.objects.get(username=userId)

@@ -95,9 +95,9 @@ WSGI_APPLICATION = "dropbox.wsgi.application"
 # Database
 # https://docs.djangoproject.com/en/4.0/ref/settings/#databases
 
-DATABASES = my_secrets.DATABASES
+# DATABASES = my_secrets.DATABASES
 
-#DATABASES = {"default": {"ENGINE": "django.db.backends.sqlite3", "NAME": "mydatabase",}}  # 테스트 위해서 임시로 선언
+DATABASES = {"default": {"ENGINE": "django.db.backends.sqlite3", "NAME": "mydatabase",}}  # 테스트 위해서 임시로 선언
 
 
 # Password validation
@@ -117,7 +117,7 @@ AUTH_USER_MODEL = "user.User"
 # Internationalization
 # https://docs.djangoproject.com/en/4.0/topics/i18n/
 
-LANGUAGE_CODE = "en-us"
+LANGUAGE_CODE = "ko-kr"
 
 TIME_ZONE = "UTC"
 
